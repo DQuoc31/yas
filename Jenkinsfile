@@ -1,6 +1,9 @@
 pipeline {
     agent any // Chạy trên bất kỳ node/agent nào đang rảnh
 
+    tools {
+        nodejs 'Node01' // Đảm bảo bạn đã cấu hình NodeJS tool trong Jenkins với tên 'Node01'
+    }
     // Định nghĩa các biến môi trường nếu cần
     environment {
         CI = 'true'
