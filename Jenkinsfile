@@ -1,40 +1,31 @@
 pipeline {
-    agent any // Chạy trên bất kỳ node/agent nào đang rảnh
+    agent {
+            docker {
+                image 'node:20' // Khai báo thẳng môi trường bạn muốn
+                // args '-u root' // Bỏ comment dòng này nếu bước npm install bị lỗi permission denied
+            }
+        }
 
-    tools {
-        nodejs 'Node01' // Đảm bảo bạn đã cấu hình NodeJS tool trong Jenkins với tên 'Node01'
-    }
-    // Định nghĩa các biến môi trường nếu cần
     environment {
         CI = 'true'
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                // Tự động kéo code từ branch đang được trigger
-                checkout scm
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
-                echo 'Installing dependencies...'
-                // Ví dụ với npm. Nếu dùng yarn thì thay bằng yarn install
+                echo 'Installing dependencies inside Node 20 container...'
+                // Không cần quan tâm thư mục nữa, Jenkins tự map code vào thẳng container
                 sh 'npm install'
             }
         }
 
         stage('Test Phase') {
             steps {
-                echo 'Running unit tests and generating coverage...'
-                // Chạy test và yêu cầu xuất coverage
-                // Lưu ý: Package.json của bạn cần cấu hình thư viện test (như Jest) 
-                // để xuất ra file test-results.xml và thư mục coverage/
+                echo 'Running unit tests...'
                 sh 'npm run test -- --ci --coverage --testResultsProcessor="jest-junit"'
             }
         }
-
+        
         stage('Build Phase') {
             steps {
                 echo 'Building the application...'
