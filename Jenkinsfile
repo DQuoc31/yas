@@ -1,59 +1,84 @@
 pipeline {
+    // Gọi "anh thợ" Maven (đã cài sẵn Java JDK 17)
     agent {
-            docker {
-                image 'node:20' // Khai báo thẳng môi trường bạn muốn
-                // args '-u root' // Bỏ comment dòng này nếu bước npm install bị lỗi permission denied
-            }
+        docker { 
+            image 'maven:3.9.6-eclipse-temurin-17' 
+            // Dòng args dưới đây giúp cache lại thư viện tải về để các lần build sau chạy nhanh như chớp
+            args '-v $HOME/.m2:/root/.m2' 
         }
+    }
 
     environment {
         CI = 'true'
     }
 
     stages {
-        stage('Install Dependencies') {
-            steps {
-                echo 'Installing dependencies inside Node 20 container...'
-                // Không cần quan tâm thư mục nữa, Jenkins tự map code vào thẳng container
-                sh 'npm install'
+        // ==========================================
+        // CỤM 1: MEDIA SERVICE
+        // ==========================================
+        stage('Media Service') {
+            // Yêu cầu 6: Chỉ chạy khi code trong thư mục media bị thay đổi
+            when { 
+                changeset "media/**" 
+            }
+            stages {
+                stage('Build Media') {
+                    steps {
+                        echo "Phát hiện thay đổi. Đang build Media Service..."
+                        // Không cần dùng dir() vì đã có Parent POM
+                        sh 'mvn --projects media --also-make clean package -DskipTests'
+                    }
+                }
+                
+                stage('Test Media') {
+                    steps {
+                        echo "Đang chạy Test cho Media Service..."
+                        sh 'mvn --projects media test'
+                    }
+                    post {
+                        always {
+                            echo "Đang lưu kết quả Test và Coverage của Media..."
+                            // Đọc file kết quả test (có sẵn trên Jenkins)
+                            junit 'media/target/surefire-reports/*.xml'
+                            
+                            // Cách 1: Nén HTML Report của Jacoco để xem trực tiếp (không cần cài thêm plugin)
+                            archiveArtifacts artifacts: 'media/target/site/jacoco/**', allowEmptyArchive: true
+                            
+                            // Cách 2: Hoặc dùng plugin Jacoco (nếu máy Jenkins của bạn đã cài plugin Jacoco)
+                            // jacoco execPattern: 'media/target/jacoco.exec'
+                        }
+                    }
+                }
             }
         }
 
-        stage('Test Phase') {
-            steps {
-                echo 'Running unit tests...'
-                sh 'npm run test -- --ci --coverage --testResultsProcessor="jest-junit"'
+        // ==========================================
+        // CỤM 2: PRODUCT SERVICE
+        // ==========================================
+        stage('Product Service') {
+            when { 
+                changeset "product/**" 
             }
-        }
-        
-        stage('Build Phase') {
-            steps {
-                echo 'Building the application...'
-                sh 'npm run build'
+            stages {
+                stage('Build Product') {
+                    steps {
+                        echo "Phát hiện thay đổi. Đang build Product Service..."
+                        sh 'mvn --projects product --also-make clean package -DskipTests'
+                    }
+                }
+                stage('Test Product') {
+                    steps {
+                        echo "Đang chạy Test cho Product Service..."
+                        sh 'mvn --projects product test'
+                    }
+                    post {
+                        always {
+                            junit 'product/target/surefire-reports/*.xml'
+                            archiveArtifacts artifacts: 'product/target/site/jacoco/**', allowEmptyArchive: true
+                        }
+                    }
+                }
             }
-        }
-    }
-
-    post {
-        always {
-            echo 'Uploading Test Results and Coverage...'
-            
-            // 1. Upload Test Result (Yêu cầu file định dạng chuẩn JUnit XML)
-            // Cần cài JUnit Plugin trên Jenkins
-            junit 'junit.xml' // Thay đổi đường dẫn trỏ đúng vào file kết quả của bạn
-            
-            // 2. Upload Test Coverage
-            // Cách đơn giản nhất là nén toàn bộ thư mục report HTML thành Artifacts
-            archiveArtifacts artifacts: 'coverage/**', allowEmptyArchive: true
-            
-            // (Nâng cao) Nếu bạn có cài Cobertura Plugin trên Jenkins để xem UI biểu đồ coverage:
-            // cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'coverage/cobertura-coverage.xml', conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
-        }
-        success {
-            echo 'Pipeline passed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed. Please check the logs.'
         }
     }
 }
