@@ -33,7 +33,7 @@ pipeline {
                 stage('Test Media') {
                     steps {
                         echo "Đang chạy Test cho Media Service..."
-                        sh 'mvn --projects media test'
+                        sh 'mvn --projects --also-make media test'
                     }
                     post {
                         always {
