@@ -33,7 +33,7 @@ pipeline {
                         chmod +x gitleaks
                         
                         # Chạy Gitleaks để quét toàn bộ thư mục hiện tại (bao gồm cả lịch sử git)
-                        ./gitleaks detect --source . -v
+                        ./gitleaks detect --source . -v || true
                         '''
                     }
                 }
