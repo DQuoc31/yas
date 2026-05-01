@@ -74,6 +74,7 @@
             </plugin>
             <!-- Test trigger Jacoco -->
             <!-- Test trigger Jacoco 2 -->
+            <!-- Test trigger Jacoco 3 -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
