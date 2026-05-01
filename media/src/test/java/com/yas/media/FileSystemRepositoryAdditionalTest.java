@@ -19,8 +19,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 class FileSystemRepositoryAdditionalTest {
-
-    private static final String TEST_DIR = "src/test/resources/fs-tests";
+    // Sửa thành đường dẫn tuyệt đối để vượt qua bài kiểm tra bảo mật đường dẫn
+    private static final String TEST_DIR = Paths.get("src/test/resources/fs-tests").toAbsolutePath().toString();
 
     @Mock
     private FilesystemConfig filesystemConfig;
@@ -29,8 +29,10 @@ class FileSystemRepositoryAdditionalTest {
     private FileSystemRepository fileSystemRepository;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         MockitoAnnotations.openMocks(this);
+        // Tự động tạo thư mục trước MỖI bài test để không bị văng IllegalStateException
+        Files.createDirectories(Paths.get(TEST_DIR));
     }
 
     @AfterEach
@@ -51,7 +53,6 @@ class FileSystemRepositoryAdditionalTest {
 
     @Test
     void persistFile_success_createsFile() throws Exception {
-        Files.createDirectories(Paths.get(TEST_DIR));
         when(filesystemConfig.getDirectory()).thenReturn(TEST_DIR);
 
         byte[] content = "hello".getBytes();
