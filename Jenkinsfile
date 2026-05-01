@@ -26,14 +26,14 @@ pipeline {
                     steps {
                         echo "Phát hiện thay đổi. Đang build Media Service..."
                         // Không cần dùng dir() vì đã có Parent POM
-                        sh 'mvn --projects media --also-make clean package -DskipTests'
+                        sh 'mvn --projects media --also-make clean install -DskipTests'
                     }
                 }
                 
                 stage('Test Media') {
                     steps {
                         echo "Đang chạy Test cho Media Service..."
-                        sh 'mvn --projects media test'
+                        sh 'mvn --projects media --also-make test'
                     }
                     post {
                         always {
@@ -63,13 +63,13 @@ pipeline {
                 stage('Build Product') {
                     steps {
                         echo "Phát hiện thay đổi. Đang build Product Service..."
-                        sh 'mvn --projects product --also-make clean package -DskipTests'
+                        sh 'mvn --projects product --also-make clean install -DskipTests'
                     }
                 }
                 stage('Test Product') {
                     steps {
                         echo "Đang chạy Test cho Product Service..."
-                        sh 'mvn --projects product test'
+                        sh 'mvn --projects product --also-make test'
                     }
                     post {
                         always {
