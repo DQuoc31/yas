@@ -76,6 +76,7 @@
             <!-- Test trigger Jacoco 2 -->
             <!-- Test trigger Jacoco 3 -->
             <!-- Test trigger Jacoco 4 -->
+            <!-- Test trigger Jacoco 5 -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
