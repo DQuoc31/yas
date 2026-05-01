@@ -1,4 +1,4 @@
-package com.yas.media;
+package com.yas.media.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
