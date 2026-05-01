@@ -70,12 +70,15 @@ pipeline {
                     steps {
                         echo 'Đang gửi code và báo cáo Test của Media lên SonarQube...'
                         sh '''
-                        mvn --projects media sonar:sonar \
+                        mvn sonar:sonar \
                         -Dsonar.projectKey=yas-media \
                         -Dsonar.projectName="YAS Media Service" \
-                        -Dsonar.host.url=http://192.168.31.16:9000\
+                        -Dsonar.host.url=http://192.168.31.16:9000 \
                         -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
-                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        -Dsonar.coverage.jacoco.xmlReportPaths=media/target/site/jacoco/jacoco.xml \
+                        -Dsonar.sources=media/src/main/java \
+                        -Dsonar.tests=media/src/test/java \
+                        -Dsonar.java.binaries=media/target/classes
                         '''
                     }
                 }
