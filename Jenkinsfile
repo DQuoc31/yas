@@ -22,6 +22,22 @@ pipeline {
                 changeset "media/**" 
             }
             stages {
+                stage('Security: Gitleaks Scan') {
+                    steps {
+                        echo 'Đang tải và chạy Gitleaks để quét Secret...'
+                        sh '''
+                        # Dùng curl để tải công cụ Gitleaks trực tiếp từ GitHub về và giải nén
+                        curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz
+                        
+                        # Cấp quyền thực thi cho file vừa tải
+                        chmod +x gitleaks
+                        
+                        # Chạy Gitleaks để quét toàn bộ thư mục hiện tại (bao gồm cả lịch sử git)
+                        ./gitleaks detect --source . -v
+                        '''
+                    }
+                }
+
                 stage('Build Media') {
                     steps {
                         echo "Phát hiện thay đổi. Đang build Media Service..."
