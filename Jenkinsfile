@@ -1,8 +1,8 @@
 pipeline {
-    // Gọi "anh thợ" Maven (đã cài sẵn Java JDK 17)
+    // Gọi "anh thợ" Maven (đã cài sẵn Java JDK 25)
     agent {
         docker { 
-            image 'maven:3.9.6-eclipse-temurin-17' 
+            image 'maven:3.9.6-eclipse-temurin-25' 
             // Dòng args dưới đây giúp cache lại thư viện tải về để các lần build sau chạy nhanh như chớp
             args '-v $HOME/.m2:/root/.m2' 
         }
