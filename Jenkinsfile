@@ -67,20 +67,19 @@ pipeline {
                 }
 
                 stage('Quality: SonarQube Scan Media') {
-                    stage('Quality: SonarQube Scan Media') {
-                    steps {
-                        echo 'Đang gửi code và báo cáo Test của Media lên SonarQube...'
-                        sh '''
-                        mvn sonar:sonar \
-                        -pl media -am \
-                        -Dsonar.projectKey=yas-media \
-                        -Dsonar.projectName="YAS Media Service" \
-                        -Dsonar.host.url=http://192.168.31.16:9000 \
-                        -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
-                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-                        '''
-                    }
+                steps {
+                    echo 'Đang gửi code và báo cáo Test của Media lên SonarQube...'
+                    sh '''
+                    mvn sonar:sonar \
+                    -pl media -am \
+                    -Dsonar.projectKey=yas-media \
+                    -Dsonar.projectName="YAS Media Service" \
+                    -Dsonar.host.url=http://192.168.31.16:9000 \
+                    -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
+                    -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                    '''
                 }
+            }
             }
         }
 
