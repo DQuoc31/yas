@@ -22,6 +22,22 @@ pipeline {
                 changeset "media/**" 
             }
             stages {
+                stage('Security: Gitleaks Scan') {
+                    steps {
+                        echo 'Đang tải và chạy Gitleaks để quét Secret...'
+                        sh '''
+                        # Dùng curl để tải công cụ Gitleaks trực tiếp từ GitHub về và giải nén
+                        curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz
+                        
+                        # Cấp quyền thực thi cho file vừa tải
+                        chmod +x gitleaks
+                        
+                        # Chạy Gitleaks để quét toàn bộ thư mục hiện tại (bao gồm cả lịch sử git)
+                        ./gitleaks detect --source . -v || true
+                        '''
+                    }
+                }
+
                 stage('Build Media') {
                     steps {
                         echo "Phát hiện thay đổi. Đang build Media Service..."
@@ -49,8 +65,43 @@ pipeline {
                         }
                     }
                 }
+
+                stage('Quality: SonarQube Scan Media') {
+                    steps {
+                        echo 'Đang gửi code và báo cáo Test của Media lên SonarQube...'
+                        sh '''
+                        mvn sonar:sonar \
+                        -pl media -am \
+                        -Dsonar.projectKey=yas-media \
+                        -Dsonar.projectName="YAS Media Service" \
+                        -Dsonar.host.url=http://192.168.31.16:9000 \
+                        -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        '''
+                    }
+                }
+
+                stage('Security: Snyk Dependency Scan') {
+                    environment {
+                        SNYK_TOKEN = credentials('snyk-token')
+                    }
+                    steps {
+                        echo 'Đang kiểm tra lỗ hổng thư viện với Snyk...'
+                        sh '''
+                        # Tải Snyk CLI bản cho Linux
+                        curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk
+                        chmod +x ./snyk
+                        
+                        # Thực hiện quét lỗ hổng trong các file pom.xml
+                        # Thêm "|| true" để pipeline không bị fail nếu thư viện có lỗi (phục vụ mục đích lấy báo cáo)
+                        ./snyk test --all-projects --token=$SNYK_TOKEN || true
+                        '''
+                    }
+                }
             }
         }
+
+
 
         // ==========================================
         // CỤM 2: PRODUCT SERVICE
