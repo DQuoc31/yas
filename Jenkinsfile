@@ -69,7 +69,7 @@ pipeline {
                 stage('Test Product') {
                     steps {
                         echo "Đang chạy Test cho Product Service..."
-                        sh 'mvn --projects product test'
+                        sh 'mvn --projects product --also-make test'
                     }
                     post {
                         always {
