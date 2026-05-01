@@ -67,21 +67,41 @@ pipeline {
                 }
 
                 stage('Quality: SonarQube Scan Media') {
-                steps {
-                    echo 'Đang gửi code và báo cáo Test của Media lên SonarQube...'
-                    sh '''
-                    mvn sonar:sonar \
-                    -pl media -am \
-                    -Dsonar.projectKey=yas-media \
-                    -Dsonar.projectName="YAS Media Service" \
-                    -Dsonar.host.url=http://192.168.31.16:9000 \
-                    -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
-                    -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-                    '''
+                    steps {
+                        echo 'Đang gửi code và báo cáo Test của Media lên SonarQube...'
+                        sh '''
+                        mvn sonar:sonar \
+                        -pl media -am \
+                        -Dsonar.projectKey=yas-media \
+                        -Dsonar.projectName="YAS Media Service" \
+                        -Dsonar.host.url=http://192.168.31.16:9000 \
+                        -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        '''
+                    }
+                }
+
+                stage('Security: Snyk Dependency Scan') {
+                    environment {
+                        SNYK_TOKEN = credentials('snyk-token')
+                    }
+                    steps {
+                        echo 'Đang kiểm tra lỗ hổng thư viện với Snyk...'
+                        sh '''
+                        # Tải Snyk CLI bản cho Linux
+                        curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk
+                        chmod +x ./snyk
+                        
+                        # Thực hiện quét lỗ hổng trong các file pom.xml
+                        # Thêm "|| true" để pipeline không bị fail nếu thư viện có lỗi (phục vụ mục đích lấy báo cáo)
+                        ./snyk test --all-projects --token=$SNYK_TOKEN || true
+                        '''
+                    }
                 }
             }
-            }
         }
+
+
 
         // ==========================================
         // CỤM 2: PRODUCT SERVICE
