@@ -248,7 +248,7 @@ class CartItemServiceTest {
     }
 
     @Nested
-    class UpdateCartItemTest {
+    class UpdateCartItemTest1 {
         @Test
         void testUpdateCartItem_whenProductNotFound_shouldThrowNotFoundException() {
             Long productId = -1L;
