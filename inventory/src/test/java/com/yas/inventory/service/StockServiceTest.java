@@ -37,7 +37,7 @@ class StockServiceTest {
 
     @Test
     void addProductIntoWarehouse_WhenAlreadyExisted_ShouldThrowException() {
-        StockPostVm postVm = new StockPostVm(1L, 1L, 0);
+        StockPostVm postVm = new StockPostVm(1L, 1L);
         when(stockRepository.existsByWarehouseIdAndProductId(1L, 1L)).thenReturn(true);
 
         assertThrows(StockExistingException.class, () -> stockService.addProductIntoWarehouse(List.of(postVm)));
@@ -45,7 +45,7 @@ class StockServiceTest {
 
     @Test
     void addProductIntoWarehouse_WhenProductNotFound_ShouldThrowException() {
-        StockPostVm postVm = new StockPostVm(1L, 1L, 0);
+        StockPostVm postVm = new StockPostVm(1L, 1L);
         when(stockRepository.existsByWarehouseIdAndProductId(1L, 1L)).thenReturn(false);
         when(productService.getProduct(1L)).thenReturn(null);
 
@@ -54,7 +54,7 @@ class StockServiceTest {
 
     @Test
     void addProductIntoWarehouse_WhenWarehouseNotFound_ShouldThrowException() {
-        StockPostVm postVm = new StockPostVm(1L, 1L, 0);
+        StockPostVm postVm = new StockPostVm(1L, 1L);
         when(stockRepository.existsByWarehouseIdAndProductId(1L, 1L)).thenReturn(false);
         when(productService.getProduct(1L)).thenReturn(mock(com.yas.inventory.viewmodel.product.ProductInfoVm.class));
         when(warehouseRepository.findById(1L)).thenReturn(Optional.empty());

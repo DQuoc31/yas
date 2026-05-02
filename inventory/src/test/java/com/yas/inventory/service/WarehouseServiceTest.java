@@ -78,7 +78,7 @@ class WarehouseServiceTest {
         Warehouse warehouse = new Warehouse();
         when(warehouseRepository.findById(1L)).thenReturn(Optional.of(warehouse));
         // Has stock logic
-        when(stockRepository.existsByWarehouseId(1L)).thenReturn(true);
+        when(stockRepository.findByWarehouseId(1L)).thenReturn(List.of(new com.yas.inventory.model.Stock()));
 
         assertThrows(DuplicatedException.class, () -> warehouseService.delete(1L));
     }
