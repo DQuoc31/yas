@@ -61,6 +61,7 @@ class WebhookServiceTest {
     void setUp() {
         webhook = new Webhook();
         webhook.setId(1L);
+        webhook.setWebhookEvents(List.of());
 
         webhookPostVm = new WebhookPostVm();
         webhookPostVm.setEvents(List.of()); // Empty list for simple tests
