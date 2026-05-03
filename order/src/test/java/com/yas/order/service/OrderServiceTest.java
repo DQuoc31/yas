@@ -1,5 +1,6 @@
 package com.yas.order.service;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,6 +25,7 @@ import com.yas.order.viewmodel.order.OrderVm;
 import com.yas.order.viewmodel.order.PaymentOrderStatusVm;
 import com.yas.order.viewmodel.orderaddress.OrderAddressPostVm;
 import java.math.BigDecimal;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 
 class OrderServiceTest {
 
@@ -219,5 +222,80 @@ class OrderServiceTest {
         when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> orderService.rejectOrder(orderId, "any"));
+    }
+
+    @Test
+    void getAllOrder_Empty_Success() {
+        org.springframework.data.util.Pair<java.time.ZonedDateTime, java.time.ZonedDateTime> timePair = org.springframework.data.util.Pair.of(null, null);
+        org.springframework.data.util.Pair<String, String> billingPair = org.springframework.data.util.Pair.of(null, null);
+        org.springframework.data.util.Pair<Integer, Integer> infoPage = org.springframework.data.util.Pair.of(0, 10);
+        
+        when(orderRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+
+        com.yas.order.viewmodel.order.OrderListVm result = orderService.getAllOrder(timePair, "", List.of(), billingPair, "", infoPage);
+
+        assertNotNull(result);
+        assertEquals(0, result.totalElements());
+    }
+
+    @Test
+    void testGetOrders_Success() {
+        java.time.ZonedDateTime createdFrom = java.time.ZonedDateTime.now().minusDays(1);
+        java.time.ZonedDateTime createdTo = java.time.ZonedDateTime.now();
+        List<OrderStatus> orderStatus = List.of(OrderStatus.PENDING);
+        org.springframework.data.util.Pair<java.time.ZonedDateTime, java.time.ZonedDateTime> timePair = org.springframework.data.util.Pair.of(createdFrom, createdTo);
+        org.springframework.data.util.Pair<String, String> billingPair = org.springframework.data.util.Pair.of("VN", "123");
+        org.springframework.data.util.Pair<Integer, Integer> infoPage = org.springframework.data.util.Pair.of(0, 10);
+
+        Order order = Order.builder().id(1L).build();
+        Page<Order> orderPage = new org.springframework.data.domain.PageImpl<>(List.of(order));
+
+        when(orderRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.PageRequest.class)))
+                .thenReturn(orderPage);
+
+        var result = orderService.getAllOrder(timePair, "Prod", orderStatus, billingPair, "test@test.com", infoPage);
+
+        assertNotNull(result);
+        assertEquals(1, result.totalElements());
+    }
+
+    @Test
+    void isOrderCompletedWithUserIdAndProductId_Success() {
+        Long productId = 1L;
+        // Mock Security Context
+        org.springframework.security.oauth2.jwt.Jwt jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
+        when(jwt.getTokenValue()).thenReturn("token");
+        org.springframework.security.core.Authentication auth = mock(org.springframework.security.core.Authentication.class);
+        when(auth.getPrincipal()).thenReturn(jwt);
+        org.springframework.security.core.context.SecurityContext ctx = mock(org.springframework.security.core.context.SecurityContext.class);
+        when(ctx.getAuthentication()).thenReturn(auth);
+        org.springframework.security.core.context.SecurityContextHolder.setContext(ctx);
+
+        when(productService.getProductVariations(productId)).thenReturn(List.of());
+        when(orderRepository.findOne(any(org.springframework.data.jpa.domain.Specification.class))).thenReturn(Optional.of(new Order()));
+
+        var result = orderService.isOrderCompletedWithUserIdAndProductId(productId);
+
+        assertNotNull(result);
+        assertEquals(true, result.isPresent());
+    }
+
+    @Test
+    void constants_ErrorCode_Constructor() {
+        assertDoesNotThrow(() -> {
+            java.lang.reflect.Constructor<com.yas.order.utils.Constants.ErrorCode> constructor = com.yas.order.utils.Constants.ErrorCode.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            constructor.newInstance();
+        });
+    }
+
+    @Test
+    void orderSpecification_Constructor() {
+        assertDoesNotThrow(() -> {
+            java.lang.reflect.Constructor<com.yas.order.specification.OrderSpecification> constructor = com.yas.order.specification.OrderSpecification.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            constructor.newInstance();
+        });
     }
 }
