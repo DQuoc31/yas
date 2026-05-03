@@ -2,6 +2,7 @@ package com.yas.payment.service;
 
 import static com.yas.payment.util.SecurityContextUtils.setUpSecurityContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
@@ -91,7 +92,7 @@ class MediaServiceTest {
     @Test
     public void getMedia_whenApiError_shouldTriggerFallback() {
         // Given
-        final String MEDIA = "http://api.yas.local/medias";
+        final String MEDIA = "http://api.yas.local";
         when(serviceUrlConfig.media()).thenReturn(MEDIA);
         mockRestClientGetMethod(restClient);
         
@@ -104,27 +105,25 @@ class MediaServiceTest {
         provider.setMediaId(1L);
 
         // This should trigger the fallback method internally via AOP or direct call for coverage
-        var mediaVmMap = mediaService.getMediaVmMap(List.of(provider));
-
-        // Then
-        assertTrue(mediaVmMap.isEmpty());
+        // Note: Resilience4j annotations only trigger fallbacks when called as a Spring Bean (proxied)
+        // In unit tests, we test the fallback logic directly.
+        assertThrows(RuntimeException.class, () -> mediaService.getMediaVmMap(List.of(provider)));
     }
 
     @Test
     public void testFallback_directly() {
         var provider = new PaymentProvider();
         provider.setMediaId(1L);
-        var mediaVmMap = mediaService.getMediaVmMap(List.of(provider)); // If not mocked it will hit try-catch if using AOP, but let's assume we want to cover the fallback method directly
         
         // Covering the private/protected fallback method
         java.lang.reflect.Method method;
         try {
             method = MediaService.class.getDeclaredMethod("fallbackGetMediaVmMap", List.class, Throwable.class);
             method.setAccessible(true);
-            var result = (java.util.Map) method.invoke(mediaService, List.of(provider), new RuntimeException("Error"));
+            var result = (java.util.Map<?, ?>) method.invoke(mediaService, List.of(provider), new RuntimeException("Error"));
             assertTrue(result.isEmpty());
         } catch (Exception e) {
-            // fail
+            org.junit.jupiter.api.Assertions.fail("Reflection failed: " + e.getMessage());
         }
     }
     
