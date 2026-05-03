@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 @lombok.Getter
 @lombok.Setter
+@lombok.Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PaymentProviderVm {
 

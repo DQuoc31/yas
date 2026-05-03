@@ -183,6 +183,15 @@ class PaymentServiceTest {
         verify(paymentRepository, times(1)).save(any());
     }
 
+    @Test
+    void capturePayment_ProviderNotFound_ThrowsException() {
+        CapturePaymentRequestVm request = CapturePaymentRequestVm.builder()
+                .paymentMethod("INVALID_PROVIDER")
+                .build();
+
+        assertThrows(IllegalArgumentException.class, () -> paymentService.capturePayment(request));
+    }
+
     private CapturedPayment prepareCapturedPayment() {
         return CapturedPayment.builder()
             .orderId(2L)

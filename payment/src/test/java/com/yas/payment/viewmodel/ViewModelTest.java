@@ -3,6 +3,8 @@ package com.yas.payment.viewmodel;
 import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
+import com.yas.payment.viewmodel.paymentprovider.MediaVm;
+import com.yas.payment.viewmodel.paymentprovider.PaymentProviderVm;
 
 class ViewModelTest {
 
@@ -92,5 +94,33 @@ class ViewModelTest {
         CheckoutStatusVm vm = new CheckoutStatusVm("check123", "COMPLETED");
         assertThat(vm.checkoutId()).isEqualTo("check123");
         assertThat(vm.checkoutStatus()).isEqualTo("COMPLETED");
+    }
+
+    @Test
+    void testMediaVm() {
+        MediaVm vm = MediaVm.builder()
+                .id(1L)
+                .caption("media")
+                .fileName("file.png")
+                .mediaType("image")
+                .url("http://url")
+                .build();
+        assertThat(vm.getId()).isEqualTo(1L);
+        assertThat(vm.getCaption()).isEqualTo("media");
+        assertThat(vm.getFileName()).isEqualTo("file.png");
+        assertThat(vm.getMediaType()).isEqualTo("image");
+        assertThat(vm.getUrl()).isEqualTo("http://url");
+    }
+
+    @Test
+    void testPaymentProviderVm() {
+        PaymentProviderVm vm = PaymentProviderVm.builder()
+                .id("id")
+                .name("name")
+                .iconUrl("url")
+                .build();
+        assertThat(vm.getId()).isEqualTo("id");
+        assertThat(vm.getName()).isEqualTo("name");
+        assertThat(vm.getIconUrl()).isEqualTo("url");
     }
 }

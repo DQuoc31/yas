@@ -245,24 +245,30 @@ class PaymentProviderServiceTest {
 
     @Test
     void create_ShouldThrowDuplicatedException_WhenIdExists() {
-        CreatePaymentVm createVm = CreatePaymentVm.builder()
-                .id("existing")
-                .name("Test")
-                .build();
-        when(paymentProviderRepository.existsById("existing")).thenReturn(true);
+        CreatePaymentVm createPaymentRequest = CreatePaymentVm.builder().id("existingId").build();
+        when(paymentProviderRepository.existsById("existingId")).thenReturn(true);
 
-        assertThrows(DuplicatedException.class, () -> paymentProviderService.create(createVm));
+        assertThrows(DuplicatedException.class, () -> paymentProviderService.create(createPaymentRequest));
     }
 
     @Test
-    void findById_ShouldReturnVm_WhenExists() {
-        PaymentProvider provider = new PaymentProvider();
-        provider.setId("test");
-        when(paymentProviderRepository.findById("test")).thenReturn(Optional.of(provider));
-        
-        PaymentProviderVm result = paymentProviderService.findById("test");
-        
-        assertThat(result.getId()).isEqualTo("test");
+    void getEnabledPaymentProviders_ShouldReturnEmptyList_WhenNoProvidersFound() {
+        when(paymentProviderRepository.findByEnabledTrue(any(Pageable.class))).thenReturn(java.util.Collections.emptyList());
+
+        List<PaymentProviderVm> result = paymentProviderService.getEnabledPaymentProviders(defaultPageable);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findById_ShouldReturnVm_WhenProviderExists() {
+        var randomVal = UUID.randomUUID().toString();
+        PaymentProvider provider = getPaymentProvider(randomVal);
+        when(paymentProviderRepository.findById(randomVal)).thenReturn(Optional.of(provider));
+
+        var result = paymentProviderService.findById(randomVal);
+
+        assertThat(result.getId()).isEqualTo(randomVal);
     }
 
     @Test
