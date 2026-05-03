@@ -1,12 +1,14 @@
 package com.yas.payment.service;
 
 import com.yas.commonlibrary.exception.NotFoundException;
+import com.yas.commonlibrary.exception.DuplicatedException;
 import com.yas.payment.mapper.CreatePaymentProviderMapper;
 import com.yas.payment.mapper.PaymentProviderMapper;
 import com.yas.payment.mapper.UpdatePaymentProviderMapper;
 import com.yas.payment.model.PaymentProvider;
 import com.yas.payment.repository.PaymentProviderRepository;
 import com.yas.payment.utils.Constants;
+import com.yas.payment.utils.MessagesUtils;
 import com.yas.payment.viewmodel.paymentprovider.CreatePaymentVm;
 import com.yas.payment.viewmodel.paymentprovider.MediaVm;
 import com.yas.payment.viewmodel.paymentprovider.PaymentProviderVm;
@@ -55,6 +57,9 @@ public class PaymentProviderService {
      */
     @Transactional
     public PaymentProviderVm create(CreatePaymentVm createPaymentVm) {
+        if (paymentProviderRepository.existsById(createPaymentVm.getId())) {
+            throw new DuplicatedException(MessagesUtils.getMessage("PP_NAME_ALREADY_EXITED", createPaymentVm.getId()));
+        }
         var paymentProvider = createPaymentProviderMapper.toModel(createPaymentVm);
         var savedPaymentProvider = paymentProviderRepository.save(paymentProvider);
         return createPaymentProviderMapper.toVmResponse(savedPaymentProvider);

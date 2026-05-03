@@ -8,6 +8,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.yas.commonlibrary.exception.DuplicatedException;
 import com.yas.commonlibrary.exception.NotFoundException;
 import com.yas.payment.mapper.CreatePaymentProviderMapper;
 import com.yas.payment.mapper.PaymentProviderMapper;
@@ -212,6 +213,34 @@ class PaymentProviderServiceTest {
         when(paymentProviderRepository.findById("non-existent")).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> 
             paymentProviderService.getAdditionalSettingsByPaymentProviderId("non-existent"));
+    }
+
+    @Test
+    void create_ShouldThrowDuplicatedException_WhenIdExists() {
+        CreatePaymentVm createVm = CreatePaymentVm.builder()
+                .id("existing")
+                .name("Test")
+                .build();
+        when(paymentProviderRepository.existsById("existing")).thenReturn(true);
+
+        assertThrows(DuplicatedException.class, () -> paymentProviderService.create(createVm));
+    }
+
+    @Test
+    void findById_ShouldReturnVm_WhenExists() {
+        PaymentProvider provider = new PaymentProvider();
+        provider.setId("test");
+        when(paymentProviderRepository.findById("test")).thenReturn(Optional.of(provider));
+        
+        PaymentProviderVm result = paymentProviderService.findById("test");
+        
+        assertThat(result.id()).isEqualTo("test");
+    }
+
+    @Test
+    void findById_ShouldThrowNotFoundException_WhenNotExists() {
+        when(paymentProviderRepository.findById("none")).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> paymentProviderService.findById("none"));
     }
 
     private static @NotNull PaymentProvider getPaymentProvider(String randomVal) {
