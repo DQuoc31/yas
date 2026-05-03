@@ -7,11 +7,14 @@ import static org.mockito.Mockito.when;
 
 import com.yas.order.config.ServiceUrlConfig;
 import com.yas.order.viewmodel.product.ProductVariationVm;
+import com.yas.order.viewmodel.product.ProductCheckoutListVm;
+import com.yas.order.viewmodel.product.ProductGetCheckoutListVm;
 import com.yas.order.viewmodel.order.OrderVm;
 import com.yas.order.viewmodel.order.OrderItemVm;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -112,5 +115,75 @@ class ProductServiceTest {
         productService.subtractProductStockQuantity(orderVm);
 
         Mockito.verify(requestBodySpec).retrieve();
+    }
+
+    @Test
+    void getProductInfomation_Success() {
+        Set<Long> ids = Set.of(1L);
+        int pageNo = 0;
+        int pageSize = 10;
+        final URI url = UriComponentsBuilder
+                .fromUriString(PRODUCT_URL)
+                .path("/products")
+                .queryParam("ids", ids)
+                .queryParam("pageNo", pageNo)
+                .queryParam("pageSize", pageSize)
+                .buildAndExpand()
+                .toUri();
+
+        RestClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(RestClient.RequestHeadersUriSpec.class);
+        RestClient.RequestHeadersSpec requestHeadersSpec = mock(RestClient.RequestHeadersSpec.class);
+        when(restClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(url)).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+
+        ProductGetCheckoutListVm response = new ProductGetCheckoutListVm(
+                List.of(ProductCheckoutListVm.builder()
+                        .id(1L)
+                        .name("P1")
+                        .price(10.0)
+                        .taxClassId(1L)
+                        .build()),
+                0, 10, 1, 1, true
+        );
+        ResponseEntity<ProductGetCheckoutListVm> responseEntity = mock(ResponseEntity.class);
+        when(responseSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+        when(responseEntity.getBody()).thenReturn(response);
+
+        Map<Long, ProductCheckoutListVm> result = productService.getProductInfomation(ids, pageNo, pageSize);
+
+        assertThat(result).containsKey(1L);
+        assertThat(result.get(1L).getName()).isEqualTo("P1");
+    }
+
+    @Test
+    void getProductInfomation_NotFound() {
+        Set<Long> ids = Set.of(1L);
+        int pageNo = 0;
+        int pageSize = 10;
+        final URI url = UriComponentsBuilder
+                .fromUriString(PRODUCT_URL)
+                .path("/products")
+                .queryParam("ids", ids)
+                .queryParam("pageNo", pageNo)
+                .queryParam("pageSize", pageSize)
+                .buildAndExpand()
+                .toUri();
+
+        RestClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(RestClient.RequestHeadersUriSpec.class);
+        RestClient.RequestHeadersSpec requestHeadersSpec = mock(RestClient.RequestHeadersSpec.class);
+        when(restClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(url)).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+
+        ResponseEntity<ProductGetCheckoutListVm> responseEntity = mock(ResponseEntity.class);
+        when(responseSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+        when(responseEntity.getBody()).thenReturn(null);
+
+        org.junit.jupiter.api.Assertions.assertThrows(com.yas.commonlibrary.exception.NotFoundException.class, () -> {
+            productService.getProductInfomation(ids, pageNo, pageSize);
+        });
     }
 }

@@ -25,10 +25,13 @@ import com.yas.order.viewmodel.order.PaymentOrderStatusVm;
 import com.yas.order.viewmodel.orderaddress.OrderAddressPostVm;
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 class OrderServiceTest {
 
@@ -185,5 +188,38 @@ class OrderServiceTest {
         verify(orderRepository).save(any(Order.class));
         assertEquals(OrderStatus.REJECT, order.getOrderStatus());
         assertEquals("Reason", order.getRejectReason());
+    }
+
+    @Test
+    void getLatestOrders_Success() {
+        int count = 5;
+        Order order = Order.builder()
+                .id(1L)
+                .email("test@example.com")
+                .shippingAddressId(new OrderAddress())
+                .billingAddressId(new OrderAddress())
+                .build();
+        Page<Order> orderPage = new org.springframework.data.domain.PageImpl<>(List.of(order));
+        
+        when(orderRepository.findAll(any(Pageable.class))).thenReturn(orderPage);
+
+        List<com.yas.order.viewmodel.order.OrderBriefVm> result = orderService.getLatestOrders(count);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("test@example.com", result.get(0).email());
+        
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(orderRepository).findAll(pageableCaptor.capture());
+        assertEquals(count, pageableCaptor.getValue().getPageSize());
+        assertEquals(0, pageableCaptor.getValue().getPageNumber());
+    }
+
+    @Test
+    void rejectOrder_NotFound() {
+        long orderId = 1L;
+        when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> orderService.rejectOrder(orderId, "any"));
     }
 }
