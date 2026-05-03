@@ -3,6 +3,7 @@ package com.yas.payment.utils;
 import org.junit.jupiter.api.Test;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MessagesUtilsTest {
@@ -33,5 +34,11 @@ class MessagesUtilsTest {
             constructor.setAccessible(true);
             constructor.newInstance();
         });
+    }
+
+    @Test
+    void testConstants_forCoverage() {
+        // Just for line coverage of constant utility class
+        assertThat(Constants.ErrorCode.PAYMENT_PROVIDER_NOT_FOUND).isEqualTo("PAYMENT_PROVIDER_NOT_FOUND");
     }
 }
