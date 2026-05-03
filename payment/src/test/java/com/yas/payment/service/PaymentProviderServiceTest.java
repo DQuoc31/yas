@@ -234,7 +234,7 @@ class PaymentProviderServiceTest {
         
         PaymentProviderVm result = paymentProviderService.findById("test");
         
-        assertThat(result.id()).isEqualTo("test");
+        assertThat(result.getId()).isEqualTo("test");
     }
 
     @Test

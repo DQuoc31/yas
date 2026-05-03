@@ -107,6 +107,17 @@ public class PaymentProviderService {
             .toList();
     }
 
+    /**
+     * Get payment provider by id.
+     *
+     * @param id payment provider id.
+     * @return payment provider.
+     */
+    public PaymentProviderVm findById(String id) {
+        var provider = findByIdOrElseThrow(id);
+        return paymentProviderMapper.toVmResponse(provider);
+    }
+
     private PaymentProvider findByIdOrElseThrow(String paymentProviderId) {
         return paymentProviderRepository.findById(paymentProviderId)
             .orElseThrow(
