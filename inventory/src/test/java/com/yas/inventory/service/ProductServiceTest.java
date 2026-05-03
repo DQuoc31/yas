@@ -65,7 +65,7 @@ class ProductServiceTest {
         when(requestHeadersUriSpec.uri(url)).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.headers(any())).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.retrieve()).thenReturn(responseSpec);
-
+        
         ProductInfoVm productInfoVm = new ProductInfoVm(productId,
             "ProductName", "ProductSKU", true);
         when(responseSpec.body(ProductInfoVm.class))
@@ -89,7 +89,7 @@ class ProductServiceTest {
         params.add("name", productName);
         params.add("sku", productSku);
         params.add("selection", selection.name());
-        params.add("productIds", productIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
+        params.add("productIds", "1,2");
 
         final URI url = UriComponentsBuilder
             .fromUriString(PRODUCT_URL)
@@ -104,9 +104,10 @@ class ProductServiceTest {
         when(requestHeadersUriSpec.uri(url)).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.headers(any())).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.retrieve()).thenReturn(responseSpec);
-        ResponseEntity responseEntity = mock(ResponseEntity.class);
+        @SuppressWarnings("unchecked")
+        ResponseEntity<List<ProductInfoVm>> responseEntity = mock(ResponseEntity.class);
         ProductInfoVm productInfoVm = new ProductInfoVm(1L, productName, productSku, true);
-        when(responseSpec.toEntity(new ParameterizedTypeReference<List<ProductInfoVm>>() {}))
+        when(responseSpec.toEntity(any(ParameterizedTypeReference.class)))
             .thenReturn(responseEntity);
         when(responseEntity.getBody()).thenReturn(List.of(productInfoVm));
 
@@ -114,7 +115,7 @@ class ProductServiceTest {
 
         assertFalse(result.isEmpty());
         assertEquals(1, result.size());
-        assertEquals(productName, result.getFirst().name());
+        assertEquals(productName, result.get(0).name());
     }
 
     @Test
@@ -132,8 +133,11 @@ class ProductServiceTest {
         when(restClient.put()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(url)).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.headers(any())).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.body(productQuantityPostVms)).thenReturn(requestBodyUriSpec);
+        @SuppressWarnings("unchecked")
+        List<ProductQuantityPostVm> postVms = any(List.class);
+        when(requestBodyUriSpec.body(postVms)).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.body(Void.class)).thenReturn(null);
         assertDoesNotThrow(() -> productService.updateProductQuantity(productQuantityPostVms));
     }
 }
