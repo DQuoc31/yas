@@ -221,6 +221,95 @@ pipeline {
             }
         }
 
+        // ==========================================
+        // CỤM 4: PAYMENT PAYPAL SERVICE
+        // ==========================================
+        stage('Payment Paypal Service') {
+            // Yêu cầu 6: Chỉ chạy khi code trong thư mục    bị thay đổi
+            when { 
+                changeset "payment-paypal/**" 
+            }
+            stages {
+                stage('Security: Gitleaks Scan') {
+                    steps {
+                        echo 'Đang tải và chạy Gitleaks để quét Secret...'
+                        sh '''
+                        # Dùng curl để tải công cụ Gitleaks trực tiếp từ GitHub về và giải nén
+                        curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz
+                        
+                        # Cấp quyền thực thi cho file vừa tải
+                        chmod +x gitleaks
+                        
+                        # Chạy Gitleaks để quét toàn bộ thư mục hiện tại (bao gồm cả lịch sử git)
+                        ./gitleaks detect --source . -v || true
+                        '''
+                    }
+                }
+
+                stage('Build Payment Paypal') {
+                    steps {
+                        echo "Phát hiện thay đổi. Đang build Payment Paypal Service..."
+                        // Không cần dùng dir() vì đã có Parent POM
+                        sh 'mvn --projects payment-paypal --also-make clean install -DskipTests'
+                    }
+                }
+                
+                stage('Test Payment Paypal') {
+                    steps {
+                        echo "Đang chạy Test cho Payment Paypal Service..."
+                        sh 'mvn --projects payment-paypal --also-make test'
+                    }
+                    post {
+                        always {
+                            echo "Đang lưu kết quả Test và Coverage của Payment Paypal..."
+                            // Đọc file kết quả test (có sẵn trên Jenkins)
+                            junit 'payment-paypal/target/surefire-reports/*.xml'
+                            
+                            // Cách 1: Nén HTML Report của Jacoco để xem trực tiếp (không cần cài thêm plugin)
+                            archiveArtifacts artifacts: 'payment-paypal/target/site/jacoco/**', allowEmptyArchive: true
+                            
+                            // Cách 2: Hoặc dùng plugin Jacoco (nếu máy Jenkins của bạn đã cài plugin Jacoco)
+                            // jacoco execPattern: 'payment-paypal/target/jacoco.exec'
+                        }
+                    }
+                }
+
+                stage('Quality: SonarQube Scan Payment Paypal') {
+                    steps {
+                        echo 'Đang gửi code và báo cáo Test của Payment Paypal lên SonarQube...'
+                        sh '''
+                        mvn sonar:sonar \
+                        -pl payment-paypal -am \
+                        -Dsonar.projectKey=yas-payment-paypal \
+                        -Dsonar.projectName="YAS Payment Paypal Service" \
+                        -Dsonar.host.url=http://192.168.31.16:9000 \
+                        -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        '''
+                    }
+                }
+
+                stage('Security: Snyk Dependency Scan') {
+                    environment {
+                        SNYK_TOKEN = credentials('snyk-token')
+                    }
+                    steps {
+                        echo 'Đang kiểm tra lỗ hổng thư viện với Snyk...'
+                        sh '''
+                        # Tải Snyk CLI bản cho Linux
+                        curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk
+                        chmod +x ./snyk
+                        
+                        # Thực hiện quét lỗ hổng trong các file pom.xml
+                        # Thêm "|| true" để pipeline không bị fail nếu thư viện có lỗi (phục vụ mục đích lấy báo cáo)
+                        ./snyk test --all-projects --token=$SNYK_TOKEN || true
+                        '''
+                    }
+                }
+            }
+        }
+    
+
 
 
         // ==========================================
