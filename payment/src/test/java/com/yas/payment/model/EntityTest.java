@@ -79,4 +79,33 @@ class EntityTest {
         assertThat(provider.getConfigureUrl()).isEqualTo("url");
         assertThat(provider.getLandingViewComponentName()).isEqualTo("comp");
     }
+
+    @Test
+    void testPayment_GetterSetter() {
+        Payment payment = new Payment();
+        payment.setCheckoutId("check");
+        payment.setOrderId(1L);
+        payment.setPaymentMethod(PaymentMethod.PAYPAL);
+        payment.setPaymentStatus(PaymentStatus.COMPLETED);
+        payment.setPaymentFee(java.math.BigDecimal.ONE);
+        payment.setAmount(java.math.BigDecimal.TEN);
+        payment.setFailureMessage("error");
+        payment.setGatewayTransactionId("trans");
+
+        assertThat(payment.getCheckoutId()).isEqualTo("check");
+        assertThat(payment.getOrderId()).isEqualTo(1L);
+        assertThat(payment.getPaymentMethod()).isEqualTo(PaymentMethod.PAYPAL);
+        assertThat(payment.getPaymentStatus()).isEqualTo(PaymentStatus.COMPLETED);
+        assertThat(payment.getPaymentFee()).isEqualTo(java.math.BigDecimal.ONE);
+        assertThat(payment.getAmount()).isEqualTo(java.math.BigDecimal.TEN);
+        assertThat(payment.getFailureMessage()).isEqualTo("error");
+        assertThat(payment.getGatewayTransactionId()).isEqualTo("trans");
+    }
+
+    @Test
+    void testPaymentProvider_AdditionalGetterSetter() {
+        PaymentProvider provider = new PaymentProvider();
+        provider.setMediaId(1L);
+        assertThat(provider.getMediaId()).isEqualTo(1L);
+    }
 }
