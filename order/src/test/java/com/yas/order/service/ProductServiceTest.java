@@ -157,6 +157,8 @@ class ProductServiceTest {
         assertThat(result.get(1L).getName()).isEqualTo("P1");
     }
 
+    
+
     @Test
     void getProductInfomation_NotFound() {
         Set<Long> ids = Set.of(1L);
