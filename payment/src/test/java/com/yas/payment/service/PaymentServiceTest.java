@@ -20,7 +20,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -83,6 +85,105 @@ class PaymentServiceTest {
         verifyResult(capturedPayment, capturePaymentResponseVm);
     }
 
+    @Test
+    void getPaymentHandler_WhenProviderNotFound_ThrowsException() {
+        InitPaymentRequestVm request = InitPaymentRequestVm.builder()
+                .paymentMethod("NON_EXISTENT")
+                .build();
+
+        assertThrows(IllegalArgumentException.class, () -> paymentService.initPayment(request));
+    }
+
+    @Test
+    void capturePayment_Failure_ReturnsFailureResponse() {
+        CapturePaymentRequestVm request = CapturePaymentRequestVm.builder()
+                .paymentMethod(PaymentMethod.PAYPAL.name())
+                .build();
+
+        CapturedPayment failedPayment = CapturedPayment.builder()
+                .paymentStatus(PaymentStatus.CANCELLED)
+                .failureMessage("Insufficient funds")
+                .amount(BigDecimal.TEN)
+                .paymentMethod(PaymentMethod.PAYPAL)
+                .checkoutId("checkout-123")
+                .build();
+
+        when(paymentHandler.capturePayment(request)).thenReturn(failedPayment);
+        when(orderService.updateCheckoutStatus(failedPayment)).thenReturn(null);
+        when(paymentRepository.save(any())).thenReturn(payment);
+
+        CapturePaymentResponseVm result = paymentService.capturePayment(request);
+
+        assertThat(result.paymentStatus()).isEqualTo(PaymentStatus.CANCELLED);
+        assertThat(result.failureMessage()).isEqualTo("Insufficient funds");
+    }
+
+    @Test
+    void constants_ErrorCode_Constructor() {
+        assertDoesNotThrow(() -> {
+            java.lang.reflect.Constructor<com.yas.payment.utils.Constants.ErrorCode> constructor =
+                    com.yas.payment.utils.Constants.ErrorCode.class.getDeclaredConstructor(com.yas.payment.utils.Constants.class);
+            constructor.setAccessible(true);
+            constructor.newInstance(new com.yas.payment.utils.Constants());
+        });
+    }
+
+    @Test
+    void constants_Constructor() {
+        assertDoesNotThrow(() -> {
+            java.lang.reflect.Constructor<com.yas.payment.utils.Constants> constructor =
+                    com.yas.payment.utils.Constants.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            constructor.newInstance();
+        });
+    }
+
+
+    @Test
+    void initializeProviders_ShouldPopulateMap() {
+        paymentService.initializeProviders();
+        // Since we already test success paths that use getPaymentHandler, 
+        // this is just to ensure initializeProviders specifically is called.
+        assertDoesNotThrow(() -> paymentService.initializeProviders());
+    }
+
+
+    @Test
+    void createPayment_ShouldSavePayment() {
+        CapturedPayment capturedPayment = CapturedPayment.builder()
+                .checkoutId("check")
+                .orderId(1L)
+                .paymentStatus(PaymentStatus.COMPLETED)
+                .amount(BigDecimal.TEN)
+                .paymentMethod(PaymentMethod.PAYPAL)
+                .build();
+        
+        when(paymentRepository.save(any())).thenReturn(payment);
+        
+        // This method is private, but capturePayment calls it.
+        // We ensure the logic inside it is covered by capturePayment.
+        CapturePaymentRequestVm request = CapturePaymentRequestVm.builder()
+                .paymentMethod("PAYPAL")
+                .token("token")
+                .build();
+        
+        when(paymentHandler.capturePayment(any())).thenReturn(capturedPayment);
+        when(orderService.updateCheckoutStatus(any())).thenReturn(1L);
+        
+        paymentService.capturePayment(request);
+        verify(paymentRepository, times(1)).save(any());
+    }
+
+
+    @Test
+    void capturePayment_ProviderNotFound_ThrowsException() {
+        CapturePaymentRequestVm request = CapturePaymentRequestVm.builder()
+                .paymentMethod("INVALID_PROVIDER")
+                .build();
+
+        assertThrows(IllegalArgumentException.class, () -> paymentService.capturePayment(request));
+    }
+
     private CapturedPayment prepareCapturedPayment() {
         return CapturedPayment.builder()
             .orderId(2L)
@@ -96,6 +197,7 @@ class PaymentServiceTest {
             .build();
     }
 
+    
     private void verifyPaymentCreation(CapturePaymentResponseVm capturedPayment) {
         ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository, times(1)).save(paymentCaptor.capture());

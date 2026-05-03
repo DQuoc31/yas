@@ -1,12 +1,14 @@
 package com.yas.payment.service;
 
 import com.yas.commonlibrary.exception.NotFoundException;
+import com.yas.commonlibrary.exception.DuplicatedException;
 import com.yas.payment.mapper.CreatePaymentProviderMapper;
 import com.yas.payment.mapper.PaymentProviderMapper;
 import com.yas.payment.mapper.UpdatePaymentProviderMapper;
 import com.yas.payment.model.PaymentProvider;
 import com.yas.payment.repository.PaymentProviderRepository;
 import com.yas.payment.utils.Constants;
+import com.yas.payment.utils.MessagesUtils;
 import com.yas.payment.viewmodel.paymentprovider.CreatePaymentVm;
 import com.yas.payment.viewmodel.paymentprovider.MediaVm;
 import com.yas.payment.viewmodel.paymentprovider.PaymentProviderVm;
@@ -55,6 +57,9 @@ public class PaymentProviderService {
      */
     @Transactional
     public PaymentProviderVm create(CreatePaymentVm createPaymentVm) {
+        if (paymentProviderRepository.existsById(createPaymentVm.getId())) {
+            throw new DuplicatedException(MessagesUtils.getMessage("PP_NAME_ALREADY_EXITED", createPaymentVm.getId()));
+        }
         var paymentProvider = createPaymentProviderMapper.toModel(createPaymentVm);
         var savedPaymentProvider = paymentProviderRepository.save(paymentProvider);
         return createPaymentProviderMapper.toVmResponse(savedPaymentProvider);
@@ -74,6 +79,12 @@ public class PaymentProviderService {
         return updatePaymentProviderMapper.toVmResponse(paymentProvider);
     }
 
+    /**
+     * Get additional settings by payment provider id.
+     *
+     * @param paymentProviderId the payment provider id.
+     * @return additional settings.
+     */
     public String getAdditionalSettingsByPaymentProviderId(String paymentProviderId) {
         return findByIdOrElseThrow(paymentProviderId).getAdditionalSettings();
     }
@@ -94,6 +105,17 @@ public class PaymentProviderService {
         return providers.stream()
             .map(provider -> toPaymentProviderVm(provider, mediaVmMap))
             .toList();
+    }
+
+    /**
+     * Get payment provider by id.
+     *
+     * @param id payment provider id.
+     * @return payment provider.
+     */
+    public PaymentProviderVm findById(String id) {
+        var provider = findByIdOrElseThrow(id);
+        return paymentProviderMapper.toVm(provider);
     }
 
     private PaymentProvider findByIdOrElseThrow(String paymentProviderId) {
