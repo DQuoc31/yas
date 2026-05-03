@@ -65,7 +65,11 @@ class WebhookServiceTest {
         webhookPostVm = new WebhookPostVm();
         webhookPostVm.setEvents(List.of()); // Empty list for simple tests
 
-        webhookDetailVm = new WebhookDetailVm(1L, "payloadUrl", "secret", "isActive", null);
+        webhookDetailVm = new WebhookDetailVm();
+        webhookDetailVm.setId(1L);
+        webhookDetailVm.setPayloadUrl("payloadUrl");
+        webhookDetailVm.setSecret("secret");
+        webhookDetailVm.setIsActive(true);
     }
 
     @Test
@@ -94,13 +98,15 @@ class WebhookServiceTest {
     @Test
     void findAllWebhooks_ReturnsListOfWebhookVm() {
         when(webhookRepository.findAll(Sort.by(Sort.Direction.DESC, "id"))).thenReturn(List.of(webhook));
-        WebhookVm webhookVm = new WebhookVm(1L, "payloadUrl");
+        WebhookVm webhookVm = new WebhookVm();
+        webhookVm.setId(1L);
+        webhookVm.setPayloadUrl("payloadUrl");
         when(webhookMapper.toWebhookVm(webhook)).thenReturn(webhookVm);
 
         List<WebhookVm> result = webhookService.findAllWebhooks();
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).id()).isEqualTo(1L);
+        assertThat(result.get(0).getId()).isEqualTo(1L);
     }
 
     @Test
@@ -110,7 +116,7 @@ class WebhookServiceTest {
 
         WebhookDetailVm result = webhookService.findById(1L);
 
-        assertThat(result.id()).isEqualTo(1L);
+        assertThat(result.getId()).isEqualTo(1L);
     }
 
     @Test
@@ -128,7 +134,7 @@ class WebhookServiceTest {
 
         WebhookDetailVm result = webhookService.create(webhookPostVm);
 
-        assertThat(result.id()).isEqualTo(1L);
+        assertThat(result.getId()).isEqualTo(1L);
         verify(webhookRepository).save(webhook);
     }
 
@@ -170,14 +176,21 @@ class WebhookServiceTest {
     void getPageableWebhooks_ReturnsWebhookListGetVm() {
         PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "id"));
         Page<Webhook> webhooks = new PageImpl<>(List.of(webhook));
-        WebhookListGetVm listGetVm = new WebhookListGetVm(List.of(), 0, 10, 1, 1, true);
+        WebhookListGetVm listGetVm = WebhookListGetVm.builder()
+            .webhooks(List.of())
+            .pageNo(0)
+            .pageSize(10)
+            .totalElements(1)
+            .totalPages(1)
+            .isLast(true)
+            .build();
 
         when(webhookRepository.findAll(pageRequest)).thenReturn(webhooks);
         when(webhookMapper.toWebhookListGetVm(webhooks, 0, 10)).thenReturn(listGetVm);
 
         WebhookListGetVm result = webhookService.getPageableWebhooks(0, 10);
 
-        assertThat(result.pageNo()).isEqualTo(0);
-        assertThat(result.totalElements()).isEqualTo(1);
+        assertThat(result.getPageNo()).isEqualTo(0);
+        assertThat(result.getTotalElements()).isEqualTo(1L);
     }
 }
