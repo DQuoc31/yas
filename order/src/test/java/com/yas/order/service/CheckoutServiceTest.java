@@ -15,11 +15,13 @@ import com.yas.commonlibrary.exception.NotFoundException;
 import com.yas.order.mapper.CheckoutMapperImpl;
 import com.yas.order.model.Checkout;
 import com.yas.order.model.CheckoutItem;
+import com.yas.order.model.Order;
 import com.yas.order.model.enumeration.CheckoutState;
 import com.yas.order.repository.CheckoutItemRepository;
 import com.yas.order.repository.CheckoutRepository;
 import com.yas.order.viewmodel.checkout.CheckoutPaymentMethodPutVm;
 import com.yas.order.viewmodel.checkout.CheckoutPostVm;
+import com.yas.order.viewmodel.checkout.CheckoutStatusPutVm;
 import com.yas.order.viewmodel.product.ProductCheckoutListVm;
 import com.yas.order.viewmodel.product.ProductGetCheckoutListVm;
 import java.util.List;
@@ -241,5 +243,39 @@ class CheckoutServiceTest {
         // Assert
         verify(checkoutRepository).save(checkout);
         assertThat(checkout.getPaymentMethodId()).isNull();
+    }
+
+    @Test
+    void testUpdateCheckoutStatus_whenNormalCase_returnOrderId() {
+        String id = "123";
+        CheckoutStatusPutVm request = new CheckoutStatusPutVm(id, "COMPLETED");
+        Checkout checkout = new Checkout();
+        checkout.setId(id);
+        checkout.setCreatedBy("test-create-by");
+        
+        Order order = new Order();
+        order.setId(1L);
+
+        when(checkoutRepository.findById(id)).thenReturn(Optional.of(checkout));
+        when(orderService.findOrderByCheckoutId(id)).thenReturn(order);
+
+        Long result = checkoutService.updateCheckoutStatus(request);
+
+        assertThat(result).isEqualTo(1L);
+        assertThat(checkout.getCheckoutState()).isEqualTo(CheckoutState.COMPLETED);
+        verify(checkoutRepository).save(checkout);
+    }
+
+    @Test
+    void testGetCheckoutPendingStateWithItemsById_whenNotOwned_throwForbidden() {
+        String id = "123";
+        Checkout checkout = new Checkout();
+        checkout.setId(id);
+        checkout.setCreatedBy("other-user");
+
+        when(checkoutRepository.findByIdAndCheckoutState(id, CheckoutState.PENDING))
+                .thenReturn(Optional.of(checkout));
+
+        assertThrows(ForbiddenException.class, () -> checkoutService.getCheckoutPendingStateWithItemsById(id));
     }
 }
