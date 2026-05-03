@@ -2,6 +2,7 @@ package com.yas.payment.service;
 
 import static com.yas.payment.util.SecurityContextUtils.setUpSecurityContext;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,7 +35,7 @@ class OrderServiceTest {
     private static final String ORDER_URL = "http://api.yas.local/order";
 
 
-    
+
     @BeforeEach
     void setUp() {
         restClient = mock(RestClient.class);
@@ -119,16 +120,14 @@ class OrderServiceTest {
 
 
     @Test
-    void handleLongFallback_ShouldReturnNull() throws Throwable {
-        Long result = orderService.handleLongFallback(new RuntimeException("Error"));
-        assertThat(result).isNull();
+    void handleLongFallback_ShouldThrowException() {
+        assertThrows(RuntimeException.class, () -> 
+            orderService.handleLongFallback(new RuntimeException("Error")));
     }
 
-
-
     @Test
-    void handlePaymentOrderStatusFallback_ShouldReturnNull() throws Throwable {
-        PaymentOrderStatusVm result = orderService.handlePaymentOrderStatusFallback(new RuntimeException("Error"));
-        assertThat(result).isNull();
+    void handlePaymentOrderStatusFallback_ShouldThrowException() {
+        assertThrows(RuntimeException.class, () -> 
+            orderService.handlePaymentOrderStatusFallback(new RuntimeException("Error")));
     }
 }
