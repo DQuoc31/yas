@@ -30,7 +30,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 class OrderServiceTest {
@@ -199,9 +198,8 @@ class OrderServiceTest {
                 .shippingAddressId(new OrderAddress())
                 .billingAddressId(new OrderAddress())
                 .build();
-        Page<Order> orderPage = new org.springframework.data.domain.PageImpl<>(List.of(order));
         
-        when(orderRepository.findAll(any(Pageable.class))).thenReturn(orderPage);
+        when(orderRepository.getLatestOrders(any(Pageable.class))).thenReturn(List.of(order));
 
         List<com.yas.order.viewmodel.order.OrderBriefVm> result = orderService.getLatestOrders(count);
 
@@ -210,7 +208,7 @@ class OrderServiceTest {
         assertEquals("test@example.com", result.get(0).email());
         
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        verify(orderRepository).findAll(pageableCaptor.capture());
+        verify(orderRepository).getLatestOrders(pageableCaptor.capture());
         assertEquals(count, pageableCaptor.getValue().getPageSize());
         assertEquals(0, pageableCaptor.getValue().getPageNumber());
     }
