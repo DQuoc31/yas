@@ -108,4 +108,16 @@ class OrderServiceTest {
         assertThat(result.paymentId()).isEqualTo(78910L);
         assertThat(result.paymentStatus()).isEqualTo("SUCCESS");
     }
+
+    @Test
+    void handleLongFallback_ShouldReturnNull() throws Throwable {
+        Long result = orderService.handleLongFallback(new RuntimeException("Error"));
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void handlePaymentOrderStatusFallback_ShouldReturnNull() throws Throwable {
+        PaymentOrderStatusVm result = orderService.handlePaymentOrderStatusFallback(new RuntimeException("Error"));
+        assertThat(result).isNull();
+    }
 }

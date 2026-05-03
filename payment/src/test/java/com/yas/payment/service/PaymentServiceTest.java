@@ -20,7 +20,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -81,6 +83,59 @@ class PaymentServiceTest {
         verifyPaymentCreation(capturePaymentResponseVm);
         verifyOrderServiceInteractions(capturedPayment);
         verifyResult(capturedPayment, capturePaymentResponseVm);
+    }
+
+    @Test
+    void getPaymentHandler_WhenProviderNotFound_ThrowsException() {
+        InitPaymentRequestVm request = InitPaymentRequestVm.builder()
+                .paymentMethod("NON_EXISTENT")
+                .build();
+
+        assertThrows(IllegalArgumentException.class, () -> paymentService.initPayment(request));
+    }
+
+    @Test
+    void capturePayment_Failure_ReturnsFailureResponse() {
+        CapturePaymentRequestVm request = CapturePaymentRequestVm.builder()
+                .paymentMethod(PaymentMethod.PAYPAL.name())
+                .build();
+
+        CapturedPayment failedPayment = CapturedPayment.builder()
+                .paymentStatus(PaymentStatus.CANCELLED)
+                .failureMessage("Insufficient funds")
+                .amount(BigDecimal.TEN)
+                .paymentMethod(PaymentMethod.PAYPAL)
+                .checkoutId("checkout-123")
+                .build();
+
+        when(paymentHandler.capturePayment(request)).thenReturn(failedPayment);
+        when(orderService.updateCheckoutStatus(failedPayment)).thenReturn(null);
+        when(paymentRepository.save(any())).thenReturn(payment);
+
+        CapturePaymentResponseVm result = paymentService.capturePayment(request);
+
+        assertThat(result.paymentStatus()).isEqualTo(PaymentStatus.CANCELLED);
+        assertThat(result.failureMessage()).isEqualTo("Insufficient funds");
+    }
+
+    @Test
+    void constants_ErrorCode_Constructor() {
+        assertDoesNotThrow(() -> {
+            java.lang.reflect.Constructor<com.yas.payment.utils.Constants.ErrorCode> constructor =
+                    com.yas.payment.utils.Constants.ErrorCode.class.getDeclaredConstructor(com.yas.payment.utils.Constants.class);
+            constructor.setAccessible(true);
+            constructor.newInstance(new com.yas.payment.utils.Constants());
+        });
+    }
+
+    @Test
+    void constants_Constructor() {
+        assertDoesNotThrow(() -> {
+            java.lang.reflect.Constructor<com.yas.payment.utils.Constants> constructor =
+                    com.yas.payment.utils.Constants.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            constructor.newInstance();
+        });
     }
 
     private CapturedPayment prepareCapturedPayment() {
