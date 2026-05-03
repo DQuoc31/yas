@@ -36,11 +36,11 @@ class ViewModelTest {
     void testCapturePaymentRequestVm() {
         CapturePaymentRequestVm vm = CapturePaymentRequestVm.builder()
                 .paymentMethod("paypal")
-                .checkoutId("check123")
+                .token("token123")
                 .build();
         
         assertThat(vm.paymentMethod()).isEqualTo("paypal");
-        assertThat(vm.checkoutId()).isEqualTo("check123");
+        assertThat(vm.token()).isEqualTo("token123");
     }
 
     @Test
@@ -51,8 +51,8 @@ class ViewModelTest {
                 .amount(BigDecimal.TEN)
                 .paymentFee(BigDecimal.ONE)
                 .gatewayTransactionId("trans123")
-                .paymentMethod("paypal")
-                .paymentStatus("COMPLETED")
+                .paymentMethod(com.yas.payment.model.enumeration.PaymentMethod.PAYPAL)
+                .paymentStatus(com.yas.payment.model.enumeration.PaymentStatus.COMPLETED)
                 .failureMessage("none")
                 .build();
         
@@ -61,8 +61,8 @@ class ViewModelTest {
         assertThat(vm.amount()).isEqualTo(BigDecimal.TEN);
         assertThat(vm.paymentFee()).isEqualTo(BigDecimal.ONE);
         assertThat(vm.gatewayTransactionId()).isEqualTo("trans123");
-        assertThat(vm.paymentMethod()).isEqualTo("paypal");
-        assertThat(vm.paymentStatus()).isEqualTo("COMPLETED");
+        assertThat(vm.paymentMethod()).isEqualTo(com.yas.payment.model.enumeration.PaymentMethod.PAYPAL);
+        assertThat(vm.paymentStatus()).isEqualTo(com.yas.payment.model.enumeration.PaymentStatus.COMPLETED);
         assertThat(vm.failureMessage()).isEqualTo("none");
     }
 
@@ -89,8 +89,8 @@ class ViewModelTest {
 
     @Test
     void testCheckoutStatusVm() {
-        CheckoutStatusVm vm = new CheckoutStatusVm(1L, "COMPLETED");
-        assertThat(vm.checkoutId()).isEqualTo(1L);
+        CheckoutStatusVm vm = new CheckoutStatusVm("check123", "COMPLETED");
+        assertThat(vm.checkoutId()).isEqualTo("check123");
         assertThat(vm.checkoutStatus()).isEqualTo("COMPLETED");
     }
 }
