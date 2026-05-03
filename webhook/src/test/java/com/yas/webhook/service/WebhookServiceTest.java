@@ -70,12 +70,15 @@ class WebhookServiceTest {
 
     @Test
     void test_notifyToWebhook_ShouldNotException() {
+        tools.jackson.databind.ObjectMapper objectMapper = new tools.jackson.databind.ObjectMapper();
+        tools.jackson.databind.JsonNode payload = objectMapper.createObjectNode();
+
         WebhookEventNotificationDto notificationDto = WebhookEventNotificationDto
             .builder()
             .notificationId(1L)
             .url("http://example.com")
             .secret("secret")
-            .payload("data")
+            .payload(payload)
             .build();
 
         WebhookEventNotification notification = new WebhookEventNotification();
