@@ -221,7 +221,24 @@ class OrderControllerTest {
     }
 
     @Test
-    @org.junit.jupiter.api.Disabled("Flaky assertion based on current time")
+    void testGetLatestOrders_thenReturnList() throws Exception {
+        int count = 5;
+        OrderBriefVm orderBriefVm = OrderBriefVm.builder()
+            .id(1L)
+            .email("test@example.com")
+            .totalPrice(BigDecimal.TEN)
+            .orderStatus(OrderStatus.PENDING)
+            .createdOn(ZonedDateTime.now())
+            .build();
+        when(orderService.getLatestOrders(count)).thenReturn(List.of(orderBriefVm));
+
+        mockMvc.perform(get("/backoffice/orders/latest/{count}", count)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").value(1L));
+    }
+
+    @Test
     void testExportCsv_whenRequestIsValid_thenReturnCsvFile() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         // Note: JavaTimeModule registration removed - not used for this test
@@ -238,6 +255,31 @@ class OrderControllerTest {
             .andExpect(MockMvcResultMatchers.header().string(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=Orders_" +
                     ZonedDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy_HH-mm-ss")) + ".csv"))
+            .andExpect(MockMvcResultMatchers.content().bytes(csvBytes));
+    }
+
+    @Test
+    void testExportCsv_thenReturnBytes() throws Exception {
+        OrderRequest orderRequest = OrderRequest.builder()
+            .createdFrom(null)
+            .createdTo(null)
+            .warehouse("")
+            .productName("")
+            .orderStatus(List.of())
+            .billingPhoneNumber("")
+            .email("")
+            .billingCountry("")
+            .pageNo(0)
+            .pageSize(10)
+            .build();
+        byte[] csvBytes = "test,csv,content".getBytes();
+        when(orderService.exportCsv(any())).thenReturn(csvBytes);
+
+        mockMvc.perform(post("/backoffice/orders/csv")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectWriter.writeValueAsString(orderRequest)))
+            .andExpect(status().isOk())
+            .andExpect(MockMvcResultMatchers.header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString(".csv")))
             .andExpect(MockMvcResultMatchers.content().bytes(csvBytes));
     }
 
