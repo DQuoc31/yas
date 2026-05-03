@@ -26,6 +26,8 @@ class TaxServiceTest {
 
     private static final String TAX_URL = "http://api.yas.local/tax";
 
+
+
     @BeforeEach
     void setUp() {
         restClient = mock(RestClient.class);
@@ -36,6 +38,9 @@ class TaxServiceTest {
         when(serviceUrlConfig.tax()).thenReturn(TAX_URL);
     }
 
+
+
+    
 
     @Test
     void testGetTaxPercentByAddress_ifNormalCase_returnCustomerVm() {

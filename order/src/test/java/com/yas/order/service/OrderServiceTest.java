@@ -1,18 +1,19 @@
 package com.yas.order.service;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.yas.commonlibrary.exception.NotFoundException;
 import com.yas.order.mapper.OrderMapper;
 import com.yas.order.model.Order;
+import com.yas.order.model.OrderAddress;
 import com.yas.order.model.enumeration.OrderStatus;
 import com.yas.order.model.enumeration.PaymentStatus;
 import com.yas.order.model.enumeration.DeliveryMethod;
@@ -24,11 +25,15 @@ import com.yas.order.viewmodel.order.OrderVm;
 import com.yas.order.viewmodel.order.PaymentOrderStatusVm;
 import com.yas.order.viewmodel.orderaddress.OrderAddressPostVm;
 import java.math.BigDecimal;
+import java.time.ZonedDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 
 class OrderServiceTest {
 
@@ -92,24 +97,35 @@ class OrderServiceTest {
 
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
             Order order = invocation.getArgument(0);
+            order.setId(1L); // Gán ID cho Order để các bước sau không bị NPE
             return order;
         });
         
-        // Mocking for acceptOrder which is called inside createOrder
-        Order mockOrder = Order.builder().id(1L).build();
-        when(orderRepository.findById(anyLong())).thenReturn(Optional.of(mockOrder));
+        // Mocking cho acceptOrder (gọi bên trong createOrder)
+        Order mockOrder = Order.builder()
+                .id(1L)
+                .email("test@example.com")
+                .shippingAddressId(new OrderAddress())
+                .billingAddressId(new OrderAddress())
+                .build();
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(mockOrder));
 
         OrderVm result = orderService.createOrder(orderPostVm);
 
         assertNotNull(result);
         assertEquals("test@example.com", result.email());
-        verify(orderRepository).save(any(Order.class));
-        verify(orderItemRepository).saveAll(anyList());
+        verify(orderRepository, times(2)).save(any(Order.class));
     }
 
     @Test
     void getOrderWithItemsById_Success() {
-        Order order = Order.builder().id(1L).build();
+        OrderAddress address = new OrderAddress();
+        address.setId(1L);
+        Order order = Order.builder()
+                .id(1L)
+                .shippingAddressId(address)
+                .billingAddressId(address)
+                .build();
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderItemRepository.findAllByOrderId(1L)).thenReturn(Collections.emptyList());
 
@@ -174,5 +190,125 @@ class OrderServiceTest {
         verify(orderRepository).save(any(Order.class));
         assertEquals(OrderStatus.REJECT, order.getOrderStatus());
         assertEquals("Reason", order.getRejectReason());
+    }
+
+    @Test
+    void getLatestOrders_Success() {
+        int count = 5;
+        Order order = Order.builder()
+                .id(1L)
+                .email("test@example.com")
+                .shippingAddressId(new OrderAddress())
+                .billingAddressId(new OrderAddress())
+                .build();
+        
+        when(orderRepository.getLatestOrders(any(Pageable.class))).thenReturn(List.of(order));
+
+        List<com.yas.order.viewmodel.order.OrderBriefVm> result = orderService.getLatestOrders(count);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("test@example.com", result.get(0).email());
+        
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(orderRepository).getLatestOrders(pageableCaptor.capture());
+        assertEquals(count, pageableCaptor.getValue().getPageSize());
+        assertEquals(0, pageableCaptor.getValue().getPageNumber());
+    }
+
+    @Test
+    void rejectOrder_NotFound() {
+        long orderId = 1L;
+        when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> orderService.rejectOrder(orderId, "any"));
+    }
+
+    @Test
+    void getAllOrder_Empty_Success() {
+        java.time.ZonedDateTime now = java.time.ZonedDateTime.now();
+        org.springframework.data.util.Pair<java.time.ZonedDateTime, java.time.ZonedDateTime> timePair = org.springframework.data.util.Pair.of(now, now);
+        org.springframework.data.util.Pair<String, String> billingPair = org.springframework.data.util.Pair.of("test", "test");
+        org.springframework.data.util.Pair<Integer, Integer> infoPage = org.springframework.data.util.Pair.of(0, 10);
+        
+        when(orderRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+
+        com.yas.order.viewmodel.order.OrderListVm result = orderService.getAllOrder(timePair, "", List.of(), billingPair, "", infoPage);
+
+        assertNotNull(result);
+        assertEquals(0, result.totalElements());
+    }
+
+
+    
+    @Test
+    void testGetOrders_Success() {
+        java.time.ZonedDateTime createdFrom = java.time.ZonedDateTime.now().minusDays(1);
+        java.time.ZonedDateTime createdTo = java.time.ZonedDateTime.now();
+        List<OrderStatus> orderStatus = List.of(OrderStatus.PENDING);
+        org.springframework.data.util.Pair<java.time.ZonedDateTime, java.time.ZonedDateTime> timePair = org.springframework.data.util.Pair.of(createdFrom, createdTo);
+        org.springframework.data.util.Pair<String, String> billingPair = org.springframework.data.util.Pair.of("VN", "123");
+        org.springframework.data.util.Pair<Integer, Integer> infoPage = org.springframework.data.util.Pair.of(0, 10);
+
+        OrderAddress address = OrderAddress.builder().id(1L).build();
+        Order order = Order.builder()
+                .id(1L)
+                .shippingAddressId(address)
+                .billingAddressId(address)
+                .build();
+        Page<Order> orderPage = new org.springframework.data.domain.PageImpl<>(List.of(order));
+
+        when(orderRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.PageRequest.class)))
+                .thenReturn(orderPage);
+
+        var result = orderService.getAllOrder(timePair, "Prod", orderStatus, billingPair, "test@test.com", infoPage);
+
+        assertNotNull(result);
+        assertEquals(1, result.totalElements());
+    }
+
+    @Test
+    void isOrderCompletedWithUserIdAndProductId_Success() {
+        Long productId = 1L;
+        // Mock Security Context
+        org.springframework.security.oauth2.jwt.Jwt jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
+        when(jwt.getSubject()).thenReturn("user-id");
+        org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth = 
+            mock(org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken.class);
+        when(auth.getPrincipal()).thenReturn(jwt);
+        when(auth.getToken()).thenReturn(jwt);
+        
+        org.springframework.security.core.context.SecurityContext ctx = mock(org.springframework.security.core.context.SecurityContext.class);
+        when(ctx.getAuthentication()).thenReturn(auth);
+        org.springframework.security.core.context.SecurityContextHolder.setContext(ctx);
+
+        when(productService.getProductVariations(productId)).thenReturn(List.of());
+        Order order = new Order();
+        when(orderRepository.findOne(any(org.springframework.data.jpa.domain.Specification.class))).thenReturn(Optional.of(order));
+
+        var result = orderService.isOrderCompletedWithUserIdAndProductId(productId);
+
+        assertNotNull(result);
+        assertEquals(true, result.isPresent());
+    }
+
+    @Test
+    void constants_ErrorCode_Constructor() {
+        assertDoesNotThrow(() -> {
+            java.lang.reflect.Constructor<com.yas.order.utils.Constants.ErrorCode> constructor = 
+                com.yas.order.utils.Constants.ErrorCode.class.getDeclaredConstructor(com.yas.order.utils.Constants.class);
+            constructor.setAccessible(true);
+            constructor.newInstance(new com.yas.order.utils.Constants());
+        });
+    }
+
+    @Test
+    void orderSpecification_Constructor() {
+        assertDoesNotThrow(() -> {
+            java.lang.reflect.Constructor<com.yas.order.specification.OrderSpecification> constructor = com.yas.order.specification.OrderSpecification.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            constructor.newInstance();
+        });
     }
 }

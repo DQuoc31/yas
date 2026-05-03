@@ -29,6 +29,8 @@ class PromotionServiceTest {
 
     private static final String PROMOTION_URL = "http://api.yas.local/promotion";
 
+
+    
     @BeforeEach
     void setUp() {
         restClient = mock(RestClient.class);
