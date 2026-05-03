@@ -65,7 +65,7 @@ class WebhookServiceTest {
         webhookPostVm = new WebhookPostVm();
         webhookPostVm.setEvents(List.of()); // Empty list for simple tests
 
-        webhookDetailVm = new WebhookDetailVm(1L, "payloadUrl", "secret", "isActive", null);
+        webhookDetailVm = new WebhookDetailVm(1L, "payloadUrl", "secret", "application/json", true, null);
     }
 
     @Test
@@ -94,13 +94,13 @@ class WebhookServiceTest {
     @Test
     void findAllWebhooks_ReturnsListOfWebhookVm() {
         when(webhookRepository.findAll(Sort.by(Sort.Direction.DESC, "id"))).thenReturn(List.of(webhook));
-        WebhookVm webhookVm = new WebhookVm(1L, "payloadUrl");
+        WebhookVm webhookVm = new WebhookVm(1L, "payloadUrl", "application/json", true);
         when(webhookMapper.toWebhookVm(webhook)).thenReturn(webhookVm);
 
         List<WebhookVm> result = webhookService.findAllWebhooks();
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).id()).isEqualTo(1L);
+        assertThat(result.get(0).getId()).isEqualTo(1L);
     }
 
     @Test
@@ -110,7 +110,7 @@ class WebhookServiceTest {
 
         WebhookDetailVm result = webhookService.findById(1L);
 
-        assertThat(result.id()).isEqualTo(1L);
+        assertThat(result.getId()).isEqualTo(1L);
     }
 
     @Test
@@ -128,7 +128,7 @@ class WebhookServiceTest {
 
         WebhookDetailVm result = webhookService.create(webhookPostVm);
 
-        assertThat(result.id()).isEqualTo(1L);
+        assertThat(result.getId()).isEqualTo(1L);
         verify(webhookRepository).save(webhook);
     }
 
@@ -177,7 +177,7 @@ class WebhookServiceTest {
 
         WebhookListGetVm result = webhookService.getPageableWebhooks(0, 10);
 
-        assertThat(result.pageNo()).isEqualTo(0);
-        assertThat(result.totalElements()).isEqualTo(1);
+        assertThat(result.getPageNo()).isEqualTo(0);
+        assertThat(result.getTotalElements()).isEqualTo(1);
     }
 }
