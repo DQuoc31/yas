@@ -187,6 +187,33 @@ class PaymentProviderServiceTest {
         verify(paymentProviderRepository, times(1)).findByEnabledTrue(defaultPageable);
     }
 
+    @Test
+    @DisplayName("Create Payment Provider failures")
+    void createPaymentProvider_Failures() {
+        // Test save failure
+        when(paymentProviderRepository.save(any())).thenThrow(new RuntimeException("Save failed"));
+        CreatePaymentVm createVm = getCreatePaymentVm("test");
+        assertThrows(RuntimeException.class, () -> paymentProviderService.create(createVm));
+    }
+
+    @Test
+    @DisplayName("Update Payment Provider failures")
+    void updatePaymentProvider_Failures() {
+        // Test not found
+        when(paymentProviderRepository.findById("non-existent")).thenReturn(Optional.empty());
+        UpdatePaymentVm updateVm = getUpdatePaymentVm("non-existent");
+        assertThrows(NotFoundException.class, () -> paymentProviderService.update(updateVm));
+    }
+
+    @Test
+    @DisplayName("Get additional settings failures")
+    void getAdditionalSettings_Failures() {
+        // Test not found
+        when(paymentProviderRepository.findById("non-existent")).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> 
+            paymentProviderService.getAdditionalSettingsByPaymentProviderId("non-existent"));
+    }
+
     private static @NotNull PaymentProvider getPaymentProvider(String randomVal) {
         PaymentProvider provider = new PaymentProvider();
         provider.setId(randomVal);
