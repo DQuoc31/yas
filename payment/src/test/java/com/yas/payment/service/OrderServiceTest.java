@@ -46,9 +46,6 @@ class OrderServiceTest {
         when(serviceUrlConfig.order()).thenReturn(ORDER_URL);
     }
 
-
-
-
     @Test
     void testUpdateCheckoutStatus_whenNormalCase_returnLong() {
 
@@ -83,8 +80,6 @@ class OrderServiceTest {
 
     }
 
-
-
     @Test
     void testUpdateOrderStatus_whenNormalCase_returnPaymentOrderStatusVm() {
 
@@ -118,12 +113,12 @@ class OrderServiceTest {
     }
 
 
-
     @Test
     void handleLongFallback_ShouldThrowException() {
         assertThrows(RuntimeException.class, () -> 
             orderService.handleLongFallback(new RuntimeException("Error")));
     }
+
 
     @Test
     void handlePaymentOrderStatusFallback_ShouldThrowException() {

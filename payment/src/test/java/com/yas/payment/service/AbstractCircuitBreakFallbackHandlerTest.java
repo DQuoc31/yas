@@ -13,6 +13,7 @@ class AbstractCircuitBreakFallbackHandlerTest {
         RuntimeException ex = new RuntimeException("test");
         assertThrows(RuntimeException.class, () -> handler.handleBodilessFallback(ex));
     }
+    
 
     @Test
     void handleTypedFallback_ShouldThrowException() {

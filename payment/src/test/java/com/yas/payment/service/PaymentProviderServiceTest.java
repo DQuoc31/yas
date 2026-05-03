@@ -233,6 +233,7 @@ class PaymentProviderServiceTest {
         UpdatePaymentVm updateVm = getUpdatePaymentVm("non-existent");
         assertThrows(NotFoundException.class, () -> paymentProviderService.update(updateVm));
     }
+    
 
     @Test
     @DisplayName("Get additional settings failures")
@@ -251,6 +252,7 @@ class PaymentProviderServiceTest {
         assertThrows(DuplicatedException.class, () -> paymentProviderService.create(createPaymentRequest));
     }
 
+
     @Test
     void getEnabledPaymentProviders_ShouldReturnEmptyList_WhenNoProvidersFound() {
         when(paymentProviderRepository.findByEnabledTrue(any(Pageable.class))).thenReturn(java.util.Collections.emptyList());
@@ -259,6 +261,7 @@ class PaymentProviderServiceTest {
 
         assertThat(result).isEmpty();
     }
+
 
     @Test
     void findById_ShouldReturnVm_WhenProviderExists() {
@@ -276,6 +279,7 @@ class PaymentProviderServiceTest {
         when(paymentProviderRepository.findById("none")).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> paymentProviderService.findById("none"));
     }
+
 
     private static @NotNull PaymentProvider getPaymentProvider(String randomVal) {
         PaymentProvider provider = new PaymentProvider();

@@ -42,8 +42,6 @@ class MediaServiceTest {
     @Mock
     private RestClient.ResponseSpec responseSpec;
 
-
-
     @Test
     public void getMedia_whenProvideValidProviders_shouldProcessSuccess() {
         // Given
@@ -79,6 +77,7 @@ class MediaServiceTest {
 
 
 
+
     @Test
     public void getMedia_whenProvideEmptyProviders_shouldNotInvokeApi() {
         // When
@@ -88,6 +87,7 @@ class MediaServiceTest {
         assertTrue(medias.isEmpty());
         verify(restClient, times(0)).get();
     }
+
 
     @Test
     public void getMedia_whenApiError_shouldTriggerFallback() {
@@ -109,6 +109,7 @@ class MediaServiceTest {
         // In unit tests, we test the fallback logic directly.
         assertThrows(RuntimeException.class, () -> mediaService.getMediaVmMap(List.of(provider)));
     }
+
 
     @Test
     public void testFallback_directly() {

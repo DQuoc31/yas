@@ -57,7 +57,6 @@ class PaymentServiceTest {
         payment.setFailureMessage(null);
         payment.setGatewayTransactionId("gatewayId");
     }
-    
 
     @Test
     void initPayment_Success() {
@@ -70,8 +69,6 @@ class PaymentServiceTest {
         assertEquals(initiatedPayment.getStatus(), result.status());
         assertEquals(initiatedPayment.getRedirectUrl(), result.redirectUrl());
     }
-
-
 
     @Test
     void capturePayment_Success() {
@@ -88,8 +85,6 @@ class PaymentServiceTest {
         verifyResult(capturedPayment, capturePaymentResponseVm);
     }
 
-
-
     @Test
     void getPaymentHandler_WhenProviderNotFound_ThrowsException() {
         InitPaymentRequestVm request = InitPaymentRequestVm.builder()
@@ -98,8 +93,6 @@ class PaymentServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> paymentService.initPayment(request));
     }
-
-
 
     @Test
     void capturePayment_Failure_ReturnsFailureResponse() {
@@ -125,8 +118,6 @@ class PaymentServiceTest {
         assertThat(result.failureMessage()).isEqualTo("Insufficient funds");
     }
 
-
-
     @Test
     void constants_ErrorCode_Constructor() {
         assertDoesNotThrow(() -> {
@@ -136,8 +127,6 @@ class PaymentServiceTest {
             constructor.newInstance(new com.yas.payment.utils.Constants());
         });
     }
-
-
 
     @Test
     void constants_Constructor() {
@@ -149,6 +138,7 @@ class PaymentServiceTest {
         });
     }
 
+
     @Test
     void initializeProviders_ShouldPopulateMap() {
         paymentService.initializeProviders();
@@ -156,6 +146,7 @@ class PaymentServiceTest {
         // this is just to ensure initializeProviders specifically is called.
         assertDoesNotThrow(() -> paymentService.initializeProviders());
     }
+
 
     @Test
     void createPayment_ShouldSavePayment() {
@@ -182,6 +173,7 @@ class PaymentServiceTest {
         paymentService.capturePayment(request);
         verify(paymentRepository, times(1)).save(any());
     }
+
 
     @Test
     void capturePayment_ProviderNotFound_ThrowsException() {
