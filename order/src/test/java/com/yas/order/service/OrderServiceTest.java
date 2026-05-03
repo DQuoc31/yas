@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -108,7 +109,7 @@ class OrderServiceTest {
 
         assertNotNull(result);
         assertEquals("test@example.com", result.email());
-        verify(orderRepository).save(any(Order.class));
+        verify(orderRepository, times(2)).save(any(Order.class));
     }
 
     @Test
