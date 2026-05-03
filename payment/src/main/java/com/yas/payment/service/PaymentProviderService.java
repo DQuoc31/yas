@@ -74,6 +74,12 @@ public class PaymentProviderService {
         return updatePaymentProviderMapper.toVmResponse(paymentProvider);
     }
 
+    /**
+     * Get additional settings by payment provider id.
+     *
+     * @param paymentProviderId the payment provider id.
+     * @return additional settings.
+     */
     public String getAdditionalSettingsByPaymentProviderId(String paymentProviderId) {
         return findByIdOrElseThrow(paymentProviderId).getAdditionalSettings();
     }
