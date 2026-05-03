@@ -2,6 +2,7 @@ package com.yas.rating.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -48,9 +49,9 @@ class CustomerServiceTest {
         Authentication authentication = mock(Authentication.class);
         Jwt jwt = mock(Jwt.class);
 
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getPrincipal()).thenReturn(jwt);
-        when(jwt.getTokenValue()).thenReturn("mock-token");
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getPrincipal()).thenReturn(jwt);
+        lenient().when(jwt.getTokenValue()).thenReturn("mock-token");
         
         SecurityContextHolder.setContext(securityContext);
     }
