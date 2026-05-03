@@ -355,7 +355,7 @@ pipeline {
 
 
         // ==========================================
-        // CỤM 4: CUSTOMER SERVICE
+        // CỤM 5: CUSTOMER SERVICE
         // ==========================================
         stage('Customer Service') {
             // Yêu cầu 6: Chỉ chạy khi code trong thư mục customer bị thay đổi
@@ -445,7 +445,7 @@ pipeline {
 
 
         // ==========================================
-        // CỤM 5: DELIVERY SERVICE
+        // CỤM 6: DELIVERY SERVICE
         // ==========================================
         stage('Delivery Service') {
             // Yêu cầu 6: Chỉ chạy khi code trong thư mục delivery bị thay đổi
@@ -535,7 +535,7 @@ pipeline {
 
 
         // ==========================================
-        // CỤM 6: INVENTORY SERVICE
+        // CỤM 7: INVENTORY SERVICE
         // ==========================================
         stage('Inventory Service') {
             // Yêu cầu 6: Chỉ chạy khi code trong thư mục inventory bị thay đổi
@@ -621,8 +621,11 @@ pipeline {
                 }
             }
         }
+
+
+
         // ==========================================
-        // CỤM 7: RATING SERVICE
+        // CỤM 8: RATING SERVICE
         // ==========================================
         stage('Rating Service') {
             // Yêu cầu 6: Chỉ chạy khi code trong thư mục rating bị thay đổi
@@ -692,8 +695,11 @@ pipeline {
                 }
             }
         }
+
+
+
         // ==========================================
-        // CỤM 8: WEBHOOK SERVICE
+        // CỤM 9: WEBHOOK SERVICE
         // ==========================================
         stage('Webhook Service') {
             // Yêu cầu 6: Chỉ chạy khi code trong thư mục webhook bị thay đổi
@@ -767,7 +773,7 @@ pipeline {
 
 
         // ==========================================
-        // CỤM 9: LOCATION SERVICE
+        // CỤM 10: LOCATION SERVICE
         // ==========================================
         stage('Location Service') {
             when { 
@@ -840,7 +846,7 @@ pipeline {
 
 
         // ==========================================
-        // CỤM 10: ORDER SERVICE
+        // CỤM 11: ORDER SERVICE
         // ==========================================
         stage('Order Service') {
             when { 
@@ -910,8 +916,10 @@ pipeline {
             }
         }
 
+
+
         // ==========================================
-        // CỤM 11: SEARCH SERVICE
+        // CỤM 12: SEARCH SERVICE
         // ==========================================
         stage('Search Service') {
             when { 
@@ -958,6 +966,80 @@ pipeline {
                         -pl search -am \
                         -Dsonar.projectKey=yas-search \
                         -Dsonar.projectName="YAS Search Service" \
+                        -Dsonar.host.url=http://192.168.31.16:9000 \
+                        -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        '''
+                    }
+                }
+
+                stage('Security: Snyk Dependency Scan') {
+                    environment {
+                        SNYK_TOKEN = credentials('snyk-token')
+                    }
+                    steps {
+                        echo 'Đang kiểm tra lỗ hổng thư viện với Snyk...'
+                        sh '''
+                        curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk
+                        chmod +x ./snyk
+                        ./snyk test --all-projects --token=$SNYK_TOKEN || true
+                        '''
+                    }
+                }
+            }
+        }
+
+
+        
+        // ==========================================
+        // CỤM 13: RECOMMENDATION SERVICE
+        // ==========================================
+        stage('Recommendation Service') {
+            // Yêu cầu 6: Chỉ chạy khi code trong thư mục recommendation bị thay đổi
+            when { 
+                changeset "recommendation/**" 
+            }
+            stages {
+                stage('Security: Gitleaks Scan') {
+                    steps {
+                        echo 'Đang tải và chạy Gitleaks để quét Secret...'
+                        sh '''
+                        curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz
+                        chmod +x gitleaks
+                        ./gitleaks detect --source . -v || true
+                        '''
+                    }
+                }
+
+                stage('Build Recommendation') {
+                    steps {
+                        echo "Phát hiện thay đổi. Đang build Recommendation Service..."
+                        sh 'mvn --projects recommendation --also-make clean install -DskipTests'
+                    }
+                }
+                
+                stage('Test Recommendation') {
+                    steps {
+                        echo "Đang chạy Test cho Recommendation Service..."
+                        sh 'mvn --projects recommendation --also-make test'
+                    }
+                    post {
+                        always {
+                            echo "Đang lưu kết quả Test và Coverage của Recommendation..."
+                            junit 'recommendation/target/surefire-reports/*.xml'
+                            archiveArtifacts artifacts: 'recommendation/target/site/jacoco/**', allowEmptyArchive: true
+                        }
+                    }
+                }
+
+                stage('Quality: SonarQube Scan Recommendation') {
+                    steps {
+                        echo 'Đang gửi code và báo cáo Test của Recommendation lên SonarQube...'
+                        sh '''
+                        mvn sonar:sonar \
+                        -pl recommendation -am \
+                        -Dsonar.projectKey=yas-recommendation \
+                        -Dsonar.projectName="YAS Recommendation Service" \
                         -Dsonar.host.url=http://192.168.31.16:9000 \
                         -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
                         -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
