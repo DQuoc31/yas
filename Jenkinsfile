@@ -111,12 +111,24 @@ pipeline {
                 changeset "product/**" 
             }
             stages {
+                stage('Security: Gitleaks Scan') {
+                    steps {
+                        echo 'Đang tải và chạy Gitleaks để quét Secret...'
+                        sh '''
+                        curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz
+                        chmod +x gitleaks
+                        ./gitleaks detect --source . -v || true
+                        '''
+                    }
+                }
+
                 stage('Build Product') {
                     steps {
                         echo "Phát hiện thay đổi. Đang build Product Service..."
                         sh 'mvn --projects product --also-make clean install -DskipTests'
                     }
                 }
+                
                 stage('Test Product') {
                     steps {
                         echo "Đang chạy Test cho Product Service..."
@@ -124,9 +136,39 @@ pipeline {
                     }
                     post {
                         always {
+                            echo "Đang lưu kết quả Test và Coverage của Product..."
                             junit 'product/target/surefire-reports/*.xml'
                             archiveArtifacts artifacts: 'product/target/site/jacoco/**', allowEmptyArchive: true
                         }
+                    }
+                }
+
+                stage('Quality: SonarQube Scan Product') {
+                    steps {
+                        echo 'Đang gửi code và báo cáo Test của Product lên SonarQube...'
+                        sh '''
+                        mvn sonar:sonar \
+                        -pl product -am \
+                        -Dsonar.projectKey=yas-product \
+                        -Dsonar.projectName="YAS Product Service" \
+                        -Dsonar.host.url=http://192.168.31.16:9000 \
+                        -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        '''
+                    }
+                }
+
+                stage('Security: Snyk Dependency Scan') {
+                    environment {
+                        SNYK_TOKEN = credentials('snyk-token')
+                    }
+                    steps {
+                        echo 'Đang kiểm tra lỗ hổng thư viện với Snyk...'
+                        sh '''
+                        curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk
+                        chmod +x ./snyk
+                        ./snyk test --all-projects --token=$SNYK_TOKEN || true
+                        '''
                     }
                 }
             }
@@ -220,6 +262,95 @@ pipeline {
                 }
             }
         }
+
+        // ==========================================
+        // CỤM 4: PAYMENT PAYPAL SERVICE
+        // ==========================================
+        stage('Payment Paypal Service') {
+            // Yêu cầu 6: Chỉ chạy khi code trong thư mục    bị thay đổi
+            when { 
+                changeset "payment-paypal/**" 
+            }
+            stages {
+                stage('Security: Gitleaks Scan') {
+                    steps {
+                        echo 'Đang tải và chạy Gitleaks để quét Secret...'
+                        sh '''
+                        # Dùng curl để tải công cụ Gitleaks trực tiếp từ GitHub về và giải nén
+                        curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz
+                        
+                        # Cấp quyền thực thi cho file vừa tải
+                        chmod +x gitleaks
+                        
+                        # Chạy Gitleaks để quét toàn bộ thư mục hiện tại (bao gồm cả lịch sử git)
+                        ./gitleaks detect --source . -v || true
+                        '''
+                    }
+                }
+
+                stage('Build Payment Paypal') {
+                    steps {
+                        echo "Phát hiện thay đổi. Đang build Payment Paypal Service..."
+                        // Không cần dùng dir() vì đã có Parent POM
+                        sh 'mvn --projects payment-paypal --also-make clean install -DskipTests'
+                    }
+                }
+                
+                stage('Test Payment Paypal') {
+                    steps {
+                        echo "Đang chạy Test cho Payment Paypal Service..."
+                        sh 'mvn --projects payment-paypal --also-make test'
+                    }
+                    post {
+                        always {
+                            echo "Đang lưu kết quả Test và Coverage của Payment Paypal..."
+                            // Đọc file kết quả test (có sẵn trên Jenkins)
+                            junit 'payment-paypal/target/surefire-reports/*.xml'
+                            
+                            // Cách 1: Nén HTML Report của Jacoco để xem trực tiếp (không cần cài thêm plugin)
+                            archiveArtifacts artifacts: 'payment-paypal/target/site/jacoco/**', allowEmptyArchive: true
+                            
+                            // Cách 2: Hoặc dùng plugin Jacoco (nếu máy Jenkins của bạn đã cài plugin Jacoco)
+                            // jacoco execPattern: 'payment-paypal/target/jacoco.exec'
+                        }
+                    }
+                }
+
+                stage('Quality: SonarQube Scan Payment Paypal') {
+                    steps {
+                        echo 'Đang gửi code và báo cáo Test của Payment Paypal lên SonarQube...'
+                        sh '''
+                        mvn sonar:sonar \
+                        -pl payment-paypal -am \
+                        -Dsonar.projectKey=yas-payment-paypal \
+                        -Dsonar.projectName="YAS Payment Paypal Service" \
+                        -Dsonar.host.url=http://192.168.31.16:9000 \
+                        -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        '''
+                    }
+                }
+
+                stage('Security: Snyk Dependency Scan') {
+                    environment {
+                        SNYK_TOKEN = credentials('snyk-token')
+                    }
+                    steps {
+                        echo 'Đang kiểm tra lỗ hổng thư viện với Snyk...'
+                        sh '''
+                        # Tải Snyk CLI bản cho Linux
+                        curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk
+                        chmod +x ./snyk
+                        
+                        # Thực hiện quét lỗ hổng trong các file pom.xml
+                        # Thêm "|| true" để pipeline không bị fail nếu thư viện có lỗi (phục vụ mục đích lấy báo cáo)
+                        ./snyk test --all-projects --token=$SNYK_TOKEN || true
+                        '''
+                    }
+                }
+            }
+        }
+    
 
 
 
@@ -610,6 +741,223 @@ pipeline {
                         -pl webhook -am \
                         -Dsonar.projectKey=yas-webhook \
                         -Dsonar.projectName="YAS Webhook Service" \
+                        -Dsonar.host.url=http://192.168.31.16:9000 \
+                        -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        '''
+                    }
+                }
+
+                stage('Security: Snyk Dependency Scan') {
+                    environment {
+                        SNYK_TOKEN = credentials('snyk-token')
+                    }
+                    steps {
+                        echo 'Đang kiểm tra lỗ hổng thư viện với Snyk...'
+                        sh '''
+                        curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk
+                        chmod +x ./snyk
+                        ./snyk test --all-projects --token=$SNYK_TOKEN || true
+                        '''
+                    }
+                }
+            }
+        }
+
+
+
+        // ==========================================
+        // CỤM 9: LOCATION SERVICE
+        // ==========================================
+        stage('Location Service') {
+            when { 
+                changeset "location/**" 
+            }
+            stages {
+                stage('Security: Gitleaks Scan') {
+                    steps {
+                        echo 'Đang tải và chạy Gitleaks để quét Secret...'
+                        sh '''
+                        curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz
+                        chmod +x gitleaks
+                        ./gitleaks detect --source . -v || true
+                        '''
+                    }
+                }
+
+                stage('Build Location') {
+                    steps {
+                        echo "Phát hiện thay đổi. Đang build Location Service..."
+                        sh 'mvn --projects location --also-make clean install -DskipTests'
+                    }
+                }
+                
+                stage('Test Location') {
+                    steps {
+                        echo "Đang chạy Test cho Location Service..."
+                        sh 'mvn --projects location --also-make test'
+                    }
+                    post {
+                        always {
+                            echo "Đang lưu kết quả Test và Coverage của Location..."
+                            junit 'location/target/surefire-reports/*.xml'
+                            archiveArtifacts artifacts: 'location/target/site/jacoco/**', allowEmptyArchive: true
+                        }
+                    }
+                }
+
+                stage('Quality: SonarQube Scan Location') {
+                    steps {
+                        echo 'Đang gửi code và báo cáo Test của Location lên SonarQube...'
+                        sh '''
+                        mvn sonar:sonar \
+                        -pl location -am \
+                        -Dsonar.projectKey=yas-location \
+                        -Dsonar.projectName="YAS Location Service" \
+                        -Dsonar.host.url=http://192.168.31.16:9000 \
+                        -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        '''
+                    }
+                }
+
+                stage('Security: Snyk Dependency Scan') {
+                    environment {
+                        SNYK_TOKEN = credentials('snyk-token')
+                    }
+                    steps {
+                        echo 'Đang kiểm tra lỗ hổng thư viện với Snyk...'
+                        sh '''
+                        curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk
+                        chmod +x ./snyk
+                        ./snyk test --all-projects --token=$SNYK_TOKEN || true
+                        '''
+                    }
+                }
+            }
+        }
+
+
+
+        // ==========================================
+        // CỤM 10: ORDER SERVICE
+        // ==========================================
+        stage('Order Service') {
+            when { 
+                changeset "order/**" 
+            }
+            stages {
+                stage('Security: Gitleaks Scan') {
+                    steps {
+                        echo 'Đang tải và chạy Gitleaks cho Order...'
+                        sh '''
+                        curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz
+                        chmod +x gitleaks
+                        ./gitleaks detect --source . -v || true
+                        '''
+                    }
+                }
+
+                stage('Build Order') {
+                    steps {
+                        echo "Phát hiện thay đổi. Đang build Order Service..."
+                        sh 'mvn --projects order --also-make clean install -DskipTests'
+                    }
+                }
+                
+                stage('Test Order') {
+                    steps {
+                        echo "Đang chạy Test cho Order Service..."
+                        sh 'mvn --projects order --also-make test'
+                    }
+                    post {
+                        always {
+                            echo "Đang lưu kết quả Test cho Order..."
+                            junit 'order/target/surefire-reports/*.xml'
+                            archiveArtifacts artifacts: 'order/target/site/jacoco/**', allowEmptyArchive: true
+                        }
+                    }
+                }
+
+                stage('Quality: SonarQube Scan Order') {
+                    steps {
+                        echo 'Đang gửi báo cáo của Order lên SonarQube...'
+                        sh '''
+                        mvn sonar:sonar \
+                        -pl order -am \
+                        -Dsonar.projectKey=yas-order \
+                        -Dsonar.projectName="YAS Order Service" \
+                        -Dsonar.host.url=http://192.168.31.16:9000 \
+                        -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        '''
+                    }
+                }
+
+                stage('Security: Snyk Dependency Scan') {
+                    environment {
+                        SNYK_TOKEN = credentials('snyk-token')
+                    }
+                    steps {
+                        echo 'Đang kiểm tra lỗ hổng thư viện cho Order...'
+                        sh '''
+                        curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk
+                        chmod +x ./snyk
+                        ./snyk test --all-projects --token=$SNYK_TOKEN || true
+                        '''
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // CỤM 11: SEARCH SERVICE
+        // ==========================================
+        stage('Search Service') {
+            when { 
+                changeset "search/**" 
+            }
+            stages {
+                stage('Security: Gitleaks Scan') {
+                    steps {
+                        echo 'Đang tải và chạy Gitleaks để quét Secret...'
+                        sh '''
+                        curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz
+                        chmod +x gitleaks
+                        ./gitleaks detect --source . -v || true
+                        '''
+                    }
+                }
+
+                stage('Build Search') {
+                    steps {
+                        echo "Phát hiện thay đổi. Đang build Search Service..."
+                        sh 'mvn --projects search --also-make clean install -DskipTests'
+                    }
+                }
+                
+                stage('Test Search') {
+                    steps {
+                        echo "Đang chạy Test cho Search Service..."
+                        sh 'mvn --projects search --also-make test'
+                    }
+                    post {
+                        always {
+                            echo "Đang lưu kết quả Test và Coverage của Search..."
+                            junit 'search/target/surefire-reports/*.xml'
+                            archiveArtifacts artifacts: 'search/target/site/jacoco/**', allowEmptyArchive: true
+                        }
+                    }
+                }
+
+                stage('Quality: SonarQube Scan Search') {
+                    steps {
+                        echo 'Đang gửi code và báo cáo Test của Search lên SonarQube...'
+                        sh '''
+                        mvn sonar:sonar \
+                        -pl search -am \
+                        -Dsonar.projectKey=yas-search \
+                        -Dsonar.projectName="YAS Search Service" \
                         -Dsonar.host.url=http://192.168.31.16:9000 \
                         -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
                         -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml

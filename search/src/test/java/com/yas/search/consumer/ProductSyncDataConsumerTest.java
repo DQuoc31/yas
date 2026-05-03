@@ -63,7 +63,6 @@ class ProductSyncDataConsumerTest {
         verify(productSyncDataService, times(1)).updateProduct(productId);
     }
 
-    @Disabled("Handle later once elasticsearch sync delete complete")
     @Test
     void testSync_whenDeleteAction_deleteProduct() {
         // When
@@ -74,6 +73,19 @@ class ProductSyncDataConsumerTest {
                 .after(Product.builder().id(productId).build())
                 .op(DELETE)
                 .build()
+        );
+
+        // Then
+        verify(productSyncDataService, times(1)).deleteProduct(productId);
+    }
+
+    @Test
+    void testSync_whenNullMessage_deleteProduct() {
+        // When
+        final long productId = 4L;
+        productSyncDataConsumer.sync(
+            ProductMsgKey.builder().id(productId).build(),
+            null
         );
 
         // Then
