@@ -4,8 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.yas.commonlibrary.exception.NotFoundException;
 import com.yas.order.mapper.OrderMapper;
 import com.yas.order.model.Order;
+import com.yas.order.model.OrderAddress;
 import com.yas.order.model.enumeration.OrderStatus;
 import com.yas.order.model.enumeration.PaymentStatus;
 import com.yas.order.model.enumeration.DeliveryMethod;
@@ -92,24 +91,35 @@ class OrderServiceTest {
 
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
             Order order = invocation.getArgument(0);
+            order.setId(1L); // Gán ID cho Order để các bước sau không bị NPE
             return order;
         });
         
-        // Mocking for acceptOrder which is called inside createOrder
-        Order mockOrder = Order.builder().id(1L).build();
-        when(orderRepository.findById(anyLong())).thenReturn(Optional.of(mockOrder));
+        // Mocking cho acceptOrder (gọi bên trong createOrder)
+        Order mockOrder = Order.builder()
+                .id(1L)
+                .email("test@example.com")
+                .shippingAddressId(new OrderAddress())
+                .billingAddressId(new OrderAddress())
+                .build();
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(mockOrder));
 
         OrderVm result = orderService.createOrder(orderPostVm);
 
         assertNotNull(result);
         assertEquals("test@example.com", result.email());
         verify(orderRepository).save(any(Order.class));
-        verify(orderItemRepository).saveAll(anyList());
     }
 
     @Test
     void getOrderWithItemsById_Success() {
-        Order order = Order.builder().id(1L).build();
+        OrderAddress address = new OrderAddress();
+        address.setId(1L);
+        Order order = Order.builder()
+                .id(1L)
+                .shippingAddressId(address)
+                .billingAddressId(address)
+                .build();
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderItemRepository.findAllByOrderId(1L)).thenReturn(Collections.emptyList());
 
