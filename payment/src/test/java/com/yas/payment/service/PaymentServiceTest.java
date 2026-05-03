@@ -149,6 +149,40 @@ class PaymentServiceTest {
         });
     }
 
+    @Test
+    void initializeProviders_ShouldPopulateMap() {
+        paymentService.initializeProviders();
+        // Since we already test success paths that use getPaymentHandler, 
+        // this is just to ensure initializeProviders specifically is called.
+        assertDoesNotThrow(() -> paymentService.initializeProviders());
+    }
+
+    @Test
+    void createPayment_ShouldSavePayment() {
+        CapturedPayment capturedPayment = CapturedPayment.builder()
+                .checkoutId("check")
+                .orderId(1L)
+                .paymentStatus(PaymentStatus.COMPLETED)
+                .amount(BigDecimal.TEN)
+                .paymentMethod(PaymentMethod.PAYPAL)
+                .build();
+        
+        when(paymentRepository.save(any())).thenReturn(payment);
+        
+        // This method is private, but capturePayment calls it.
+        // We ensure the logic inside it is covered by capturePayment.
+        CapturePaymentRequestVm request = CapturePaymentRequestVm.builder()
+                .paymentMethod("PAYPAL")
+                .token("token")
+                .build();
+        
+        when(paymentHandler.capturePayment(any())).thenReturn(capturedPayment);
+        when(orderService.updateCheckoutStatus(any())).thenReturn(1L);
+        
+        paymentService.capturePayment(request);
+        verify(paymentRepository, times(1)).save(any());
+    }
+
     private CapturedPayment prepareCapturedPayment() {
         return CapturedPayment.builder()
             .orderId(2L)

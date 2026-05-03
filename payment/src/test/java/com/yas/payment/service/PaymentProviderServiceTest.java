@@ -16,9 +16,11 @@ import com.yas.payment.mapper.UpdatePaymentProviderMapper;
 import com.yas.payment.model.PaymentProvider;
 import com.yas.payment.repository.PaymentProviderRepository;
 import com.yas.payment.viewmodel.paymentprovider.CreatePaymentVm;
+import com.yas.payment.viewmodel.paymentprovider.MediaVm;
 import com.yas.payment.viewmodel.paymentprovider.PaymentProviderVm;
 import com.yas.payment.viewmodel.paymentprovider.UpdatePaymentVm;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
@@ -31,6 +33,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 
 class PaymentProviderServiceTest {
 
@@ -188,6 +192,30 @@ class PaymentProviderServiceTest {
         verify(paymentProviderRepository, times(1)).findByEnabledTrue(defaultPageable);
     }
 
+    @Test
+    void getEnabledPaymentProviders_ShouldReturnEmpty_WhenNoProviders() {
+        when(paymentProviderRepository.findByEnabledTrue(any(Pageable.class))).thenReturn(List.of());
+        var result = paymentProviderService.getEnabledPaymentProviders(Pageable.unpaged());
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void getEnabledPaymentProviders_ShouldReturnList_WhenProvidersExist() {
+        PaymentProvider provider = new PaymentProvider();
+        provider.setId("test");
+        provider.setMediaId(1L);
+        List<PaymentProvider> providers = List.of(provider);
+        
+        when(paymentProviderRepository.findByEnabledTrue(any(Pageable.class))).thenReturn(providers);
+        when(mediaService.getMediaVmMap(any())).thenReturn(Map.of(1L, MediaVm.builder().url("http://icon").build()));
+        when(paymentProviderMapper.toVm(any())).thenReturn(new PaymentProviderVm("test", "Test", "url", 1, 1L, null));
+
+        var result = paymentProviderService.getEnabledPaymentProviders(Pageable.unpaged());
+        
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getIconUrl()).isEqualTo("http://icon");
+    }
+    
     @Test
     @DisplayName("Create Payment Provider failures")
     void createPaymentProvider_Failures() {
