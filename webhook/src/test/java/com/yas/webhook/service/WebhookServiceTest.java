@@ -10,9 +10,11 @@ import static org.mockito.Mockito.when;
 import com.yas.commonlibrary.exception.NotFoundException;
 import com.yas.webhook.integration.api.WebhookApi;
 import com.yas.webhook.model.Webhook;
+import com.yas.webhook.model.WebhookEvent;
 import com.yas.webhook.model.WebhookEventNotification;
 import com.yas.webhook.model.dto.WebhookEventNotificationDto;
 import com.yas.webhook.model.mapper.WebhookMapper;
+import com.yas.webhook.model.viewmodel.webhook.EventVm;
 import com.yas.webhook.model.viewmodel.webhook.WebhookDetailVm;
 import com.yas.webhook.model.viewmodel.webhook.WebhookListGetVm;
 import com.yas.webhook.model.viewmodel.webhook.WebhookPostVm;
@@ -133,6 +135,36 @@ class WebhookServiceTest {
     }
 
     @Test
+    void create_WhenHasEvents_SavesAndReturnsWebhookDetailVm() {
+        EventVm eventVm = EventVm.builder().id(1L).build();
+        webhookPostVm.setEvents(List.of(eventVm));
+        com.yas.webhook.model.Event eventEntity = new com.yas.webhook.model.Event();
+        eventEntity.setId(1L);
+
+        when(webhookMapper.toCreatedWebhook(webhookPostVm)).thenReturn(webhook);
+        when(webhookRepository.save(webhook)).thenReturn(webhook);
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(eventEntity));
+        when(webhookMapper.toWebhookDetailVm(webhook)).thenReturn(webhookDetailVm);
+
+        WebhookDetailVm result = webhookService.create(webhookPostVm);
+
+        assertThat(result.getId()).isEqualTo(1L);
+        verify(webhookEventRepository).saveAll(any());
+    }
+
+    @Test
+    void create_WhenEventNotFound_ThrowsNotFoundException() {
+        EventVm eventVm = EventVm.builder().id(2L).build();
+        webhookPostVm.setEvents(List.of(eventVm));
+
+        when(webhookMapper.toCreatedWebhook(webhookPostVm)).thenReturn(webhook);
+        when(webhookRepository.save(webhook)).thenReturn(webhook);
+        when(eventRepository.findById(2L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> webhookService.create(webhookPostVm));
+    }
+
+    @Test
     void update_WhenIdIsValid_UpdatesWebhook() {
         when(webhookRepository.findById(1L)).thenReturn(Optional.of(webhook));
         when(webhookMapper.toUpdatedWebhook(webhook, webhookPostVm)).thenReturn(webhook);
@@ -140,6 +172,25 @@ class WebhookServiceTest {
         webhookService.update(webhookPostVm, 1L);
 
         verify(webhookRepository).save(webhook);
+    }
+
+    @Test
+    void update_WhenHasEvents_UpdatesWebhook() {
+        EventVm eventVm = EventVm.builder().id(1L).build();
+        webhookPostVm.setEvents(List.of(eventVm));
+        com.yas.webhook.model.Event eventEntity = new com.yas.webhook.model.Event();
+        eventEntity.setId(1L);
+        webhook.setWebhookEvents(List.of(new WebhookEvent()));
+
+        when(webhookRepository.findById(1L)).thenReturn(Optional.of(webhook));
+        when(webhookMapper.toUpdatedWebhook(webhook, webhookPostVm)).thenReturn(webhook);
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(eventEntity));
+
+        webhookService.update(webhookPostVm, 1L);
+
+        verify(webhookRepository).save(webhook);
+        verify(webhookEventRepository).deleteAll(any());
+        verify(webhookEventRepository).saveAll(any());
     }
 
     @Test
@@ -155,8 +206,8 @@ class WebhookServiceTest {
 
         webhookService.delete(1L);
 
-        verify(webhookEventRepository).deleteByWebhookId(1L);
         verify(webhookRepository).deleteById(1L);
+        verify(webhookEventRepository).deleteByWebhookId(1L);
     }
 
     @Test
