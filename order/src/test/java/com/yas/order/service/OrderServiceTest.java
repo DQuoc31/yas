@@ -226,8 +226,9 @@ class OrderServiceTest {
 
     @Test
     void getAllOrder_Empty_Success() {
-        org.springframework.data.util.Pair<java.time.ZonedDateTime, java.time.ZonedDateTime> timePair = org.springframework.data.util.Pair.of(null, null);
-        org.springframework.data.util.Pair<String, String> billingPair = org.springframework.data.util.Pair.of(null, null);
+        java.time.ZonedDateTime now = java.time.ZonedDateTime.now();
+        org.springframework.data.util.Pair<java.time.ZonedDateTime, java.time.ZonedDateTime> timePair = org.springframework.data.util.Pair.of(now, now);
+        org.springframework.data.util.Pair<String, String> billingPair = org.springframework.data.util.Pair.of("test", "test");
         org.springframework.data.util.Pair<Integer, Integer> infoPage = org.springframework.data.util.Pair.of(0, 10);
         
         when(orderRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class)))
@@ -248,7 +249,12 @@ class OrderServiceTest {
         org.springframework.data.util.Pair<String, String> billingPair = org.springframework.data.util.Pair.of("VN", "123");
         org.springframework.data.util.Pair<Integer, Integer> infoPage = org.springframework.data.util.Pair.of(0, 10);
 
-        Order order = Order.builder().id(1L).build();
+        OrderAddress address = OrderAddress.builder().id(1L).build();
+        Order order = Order.builder()
+                .id(1L)
+                .shippingAddressId(address)
+                .billingAddressId(address)
+                .build();
         Page<Order> orderPage = new org.springframework.data.domain.PageImpl<>(List.of(order));
 
         when(orderRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.PageRequest.class)))
@@ -265,15 +271,19 @@ class OrderServiceTest {
         Long productId = 1L;
         // Mock Security Context
         org.springframework.security.oauth2.jwt.Jwt jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-        when(jwt.getTokenValue()).thenReturn("token");
-        org.springframework.security.core.Authentication auth = mock(org.springframework.security.core.Authentication.class);
+        when(jwt.getSubject()).thenReturn("user-id");
+        org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken auth = 
+            mock(org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken.class);
         when(auth.getPrincipal()).thenReturn(jwt);
+        when(auth.getToken()).thenReturn(jwt);
+        
         org.springframework.security.core.context.SecurityContext ctx = mock(org.springframework.security.core.context.SecurityContext.class);
         when(ctx.getAuthentication()).thenReturn(auth);
         org.springframework.security.core.context.SecurityContextHolder.setContext(ctx);
 
         when(productService.getProductVariations(productId)).thenReturn(List.of());
-        when(orderRepository.findOne(any(org.springframework.data.jpa.domain.Specification.class))).thenReturn(Optional.of(new Order()));
+        Order order = new Order();
+        when(orderRepository.findOne(any(org.springframework.data.jpa.domain.Specification.class))).thenReturn(Optional.of(order));
 
         var result = orderService.isOrderCompletedWithUserIdAndProductId(productId);
 
@@ -284,9 +294,10 @@ class OrderServiceTest {
     @Test
     void constants_ErrorCode_Constructor() {
         assertDoesNotThrow(() -> {
-            java.lang.reflect.Constructor<com.yas.order.utils.Constants.ErrorCode> constructor = com.yas.order.utils.Constants.ErrorCode.class.getDeclaredConstructor();
+            java.lang.reflect.Constructor<com.yas.order.utils.Constants.ErrorCode> constructor = 
+                com.yas.order.utils.Constants.ErrorCode.class.getDeclaredConstructor(com.yas.order.utils.Constants.class);
             constructor.setAccessible(true);
-            constructor.newInstance();
+            constructor.newInstance(new com.yas.order.utils.Constants());
         });
     }
 
