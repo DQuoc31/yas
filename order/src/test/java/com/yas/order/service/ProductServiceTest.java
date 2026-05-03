@@ -63,10 +63,11 @@ class ProductServiceTest {
                 .toUri();
 
         RestClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(RestClient.RequestHeadersUriSpec.class);
+        RestClient.RequestHeadersSpec requestHeadersSpec = mock(RestClient.RequestHeadersSpec.class);
         when(restClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(url)).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.headers(any())).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.retrieve()).thenReturn(responseSpec);
+        when(requestHeadersUriSpec.uri(url)).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         
         @SuppressWarnings("unchecked")
         ResponseEntity<List<ProductVariationVm>> responseEntity = mock(ResponseEntity.class);
@@ -101,14 +102,15 @@ class ProductServiceTest {
                 .toUri();
 
         RestClient.RequestBodyUriSpec requestBodyUriSpec = mock(RestClient.RequestBodyUriSpec.class);
+        RestClient.RequestBodySpec requestBodySpec = mock(RestClient.RequestBodySpec.class);
         when(restClient.put()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(url)).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.headers(any())).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.body(any())).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
+        when(requestBodyUriSpec.uri(url)).thenReturn(requestBodySpec);
+        when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.body(any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
 
         productService.subtractProductStockQuantity(orderVm);
 
-        Mockito.verify(requestBodyUriSpec).retrieve();
+        Mockito.verify(requestBodySpec).retrieve();
     }
 }
