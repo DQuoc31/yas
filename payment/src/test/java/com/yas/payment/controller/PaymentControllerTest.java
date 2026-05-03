@@ -21,11 +21,13 @@ class PaymentControllerTest {
     private PaymentService paymentService;
     private PaymentController paymentController;
 
+
     @BeforeEach
     void setUp() {
         paymentService = mock(PaymentService.class);
         paymentController = new PaymentController(paymentService);
     }
+
 
     @Test
     void initPayment_ShouldReturnResponse() {
@@ -46,6 +48,7 @@ class PaymentControllerTest {
         assertThat(result.paymentId()).isEqualTo("pay-123");
     }
 
+
     @Test
     void capturePayment_ShouldReturnResponse() {
         CapturePaymentRequestVm request = CapturePaymentRequestVm.builder()
@@ -64,6 +67,7 @@ class PaymentControllerTest {
         assertThat(result.paymentStatus()).isEqualTo(PaymentStatus.COMPLETED);
     }
 
+    
     @Test
     void cancelPayment_ShouldReturnOk() {
         ResponseEntity<String> result = paymentController.cancelPayment();

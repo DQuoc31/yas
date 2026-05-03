@@ -57,6 +57,7 @@ class PaymentServiceTest {
         payment.setFailureMessage(null);
         payment.setGatewayTransactionId("gatewayId");
     }
+    
 
     @Test
     void initPayment_Success() {
@@ -69,6 +70,8 @@ class PaymentServiceTest {
         assertEquals(initiatedPayment.getStatus(), result.status());
         assertEquals(initiatedPayment.getRedirectUrl(), result.redirectUrl());
     }
+
+
 
     @Test
     void capturePayment_Success() {
@@ -85,6 +88,8 @@ class PaymentServiceTest {
         verifyResult(capturedPayment, capturePaymentResponseVm);
     }
 
+
+
     @Test
     void getPaymentHandler_WhenProviderNotFound_ThrowsException() {
         InitPaymentRequestVm request = InitPaymentRequestVm.builder()
@@ -93,6 +98,8 @@ class PaymentServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> paymentService.initPayment(request));
     }
+
+
 
     @Test
     void capturePayment_Failure_ReturnsFailureResponse() {
@@ -118,6 +125,8 @@ class PaymentServiceTest {
         assertThat(result.failureMessage()).isEqualTo("Insufficient funds");
     }
 
+
+
     @Test
     void constants_ErrorCode_Constructor() {
         assertDoesNotThrow(() -> {
@@ -127,6 +136,8 @@ class PaymentServiceTest {
             constructor.newInstance(new com.yas.payment.utils.Constants());
         });
     }
+
+
 
     @Test
     void constants_Constructor() {
@@ -151,6 +162,7 @@ class PaymentServiceTest {
             .build();
     }
 
+    
     private void verifyPaymentCreation(CapturePaymentResponseVm capturedPayment) {
         ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository, times(1)).save(paymentCaptor.capture());

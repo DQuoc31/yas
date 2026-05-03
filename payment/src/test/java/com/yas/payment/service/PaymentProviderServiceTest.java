@@ -63,6 +63,7 @@ class PaymentProviderServiceTest {
 
     private Pageable defaultPageable = Pageable.ofSize(10);
 
+    
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -71,6 +72,8 @@ class PaymentProviderServiceTest {
         paymentProvider.setAdditionalSettings("additional settings");
         paymentProvider.setEnabled(true);
     }
+
+
 
     @Test
     @DisplayName("Create Payment Provider successfully")
@@ -91,6 +94,8 @@ class PaymentProviderServiceTest {
             .ignoringFields(IGNORED_FIELDS)
             .isEqualTo(createPaymentRequest);
     }
+
+
 
     @Test
     @DisplayName("Update Payment Provider successfully")
@@ -113,6 +118,8 @@ class PaymentProviderServiceTest {
             .isEqualTo(updatePaymentRequest);
     }
 
+
+
     @Test
     @DisplayName("Update non-existing Payment Provider, Service should throw NotFoundException")
     void updateNonExistPaymentProvider() {
@@ -129,6 +136,8 @@ class PaymentProviderServiceTest {
         );
     }
 
+
+
     @Test
     void getAdditionalSettingsByPaymentProviderId_ShouldReturnAdditionalSettings_WhenPaymentProviderExists() {
         when(paymentProviderRepository.findById("providerId")).thenReturn(Optional.of(paymentProvider));
@@ -138,6 +147,8 @@ class PaymentProviderServiceTest {
         assertThat(result).isEqualTo("additional settings");
         verify(paymentProviderRepository, times(1)).findById("providerId");
     }
+
+
 
     @Test
     void getAdditionalSettingsByPaymentProviderId_ShouldThrowNotFoundException_WhenPaymentProviderDoesNotExist() {
@@ -150,6 +161,8 @@ class PaymentProviderServiceTest {
         verify(paymentProviderRepository, times(1)).findById("invalidId");
     }
 
+
+
     @Test
     void getEnabledPaymentProviders_ShouldReturnListOfEnabledPaymentProviders() {
         List<PaymentProvider> enabledProviders = List.of(paymentProvider);
@@ -161,6 +174,8 @@ class PaymentProviderServiceTest {
         assertThat(result.get(0).getId()).isEqualTo(paymentProvider.getId());
         verify(paymentProviderRepository, times(1)).findByEnabledTrue(defaultPageable);
     }
+
+
 
     @Test
     void getEnabledPaymentProviders_ShouldReturnEmptyList_WhenNoEnabledPaymentProvidersExist() {

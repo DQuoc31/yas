@@ -41,6 +41,8 @@ class MediaServiceTest {
     @Mock
     private RestClient.ResponseSpec responseSpec;
 
+
+
     @Test
     public void getMedia_whenProvideValidProviders_shouldProcessSuccess() {
         // Given
@@ -74,6 +76,8 @@ class MediaServiceTest {
         verify(restClient, times(1)).get();
     }
 
+
+
     @Test
     public void getMedia_whenProvideEmptyProviders_shouldNotInvokeApi() {
         // When
@@ -84,6 +88,7 @@ class MediaServiceTest {
         verify(restClient, times(0)).get();
     }
 
+    
     private void mockRestClientGetMethod(RestClient restClient) {
         RestClient.RequestHeadersUriSpec requestHeadersUriSpec = Mockito.mock(RestClient.RequestHeadersUriSpec.class);
         when(restClient.get()).thenReturn(requestHeadersUriSpec);

@@ -33,6 +33,8 @@ class OrderServiceTest {
 
     private static final String ORDER_URL = "http://api.yas.local/order";
 
+
+    
     @BeforeEach
     void setUp() {
         restClient = mock(RestClient.class);
@@ -42,6 +44,9 @@ class OrderServiceTest {
         setUpSecurityContext("test");
         when(serviceUrlConfig.order()).thenReturn(ORDER_URL);
     }
+
+
+
 
     @Test
     void testUpdateCheckoutStatus_whenNormalCase_returnLong() {
@@ -77,6 +82,8 @@ class OrderServiceTest {
 
     }
 
+
+
     @Test
     void testUpdateOrderStatus_whenNormalCase_returnPaymentOrderStatusVm() {
 
@@ -109,11 +116,15 @@ class OrderServiceTest {
         assertThat(result.paymentStatus()).isEqualTo("SUCCESS");
     }
 
+
+
     @Test
     void handleLongFallback_ShouldReturnNull() throws Throwable {
         Long result = orderService.handleLongFallback(new RuntimeException("Error"));
         assertThat(result).isNull();
     }
+
+
 
     @Test
     void handlePaymentOrderStatusFallback_ShouldReturnNull() throws Throwable {
