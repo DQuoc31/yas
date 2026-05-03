@@ -46,7 +46,7 @@ public class SearchIntegrationTestConfiguration {
 
     @Bean(destroyMethod = "stop")
     public KeycloakContainer keycloakContainer() {
-        return new KeycloakContainer()
+        return new KeycloakContainer("keycloak/keycloak:24.0.0")
             .withRealmImportFiles("/test-realm.json")
             .withReuse(true);
     }

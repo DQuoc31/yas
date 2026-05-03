@@ -72,7 +72,9 @@ public class WebhookService {
             () -> new NotFoundException(MessageCode.WEBHOOK_NOT_FOUND, id));
         Webhook updatedWebhook = webhookMapper.toUpdatedWebhook(existedWebHook, webhookPostVm);
         webhookRepository.save(updatedWebhook);
-        webhookEventRepository.deleteAll(existedWebHook.getWebhookEvents().stream().toList());
+        if (existedWebHook.getWebhookEvents() != null) {
+            webhookEventRepository.deleteAll(existedWebHook.getWebhookEvents());
+        }
         if (!CollectionUtils.isEmpty(webhookPostVm.getEvents())) {
             List<WebhookEvent> webhookEvents = initializeWebhookEvents(id, webhookPostVm.getEvents());
             webhookEventRepository.saveAll(webhookEvents);
