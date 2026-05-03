@@ -115,7 +115,7 @@ public class PaymentProviderService {
      */
     public PaymentProviderVm findById(String id) {
         var provider = findByIdOrElseThrow(id);
-        return paymentProviderMapper.toVmResponse(provider);
+        return paymentProviderMapper.toVm(provider);
     }
 
     private PaymentProvider findByIdOrElseThrow(String paymentProviderId) {
