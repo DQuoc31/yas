@@ -18,8 +18,10 @@ public class AuthenticationUtils {
             throw new AccessDeniedException(Constants.ErrorCode.ACCESS_DENIED);
         }
 
-        JwtAuthenticationToken contextHolder = (JwtAuthenticationToken) authentication;
+        if (authentication instanceof JwtAuthenticationToken contextHolder) {
+            return contextHolder.getToken().getSubject();
+        }
 
-        return contextHolder.getToken().getSubject();
+        throw new AccessDeniedException(Constants.ErrorCode.ACCESS_DENIED);
     }
 }
