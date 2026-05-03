@@ -43,6 +43,8 @@ public class AddressServiceTest {
     private District district;
     private StateOrProvince stateOrProvince;
 
+
+
     private void generateTestData() {
         country = countryRepository.save(Country.builder()
             .name("country-1")
@@ -71,6 +73,7 @@ public class AddressServiceTest {
             .build());
     }
 
+
     @AfterEach
     void tearDown() {
         addressRepository.deleteAll();
@@ -78,6 +81,7 @@ public class AddressServiceTest {
         stateOrProvinceRepository.deleteAll();
         countryRepository.deleteAll();
     }
+
 
     @Test
     void getAddress_ExistInDatabase_Success() {
@@ -87,11 +91,13 @@ public class AddressServiceTest {
         assertEquals("address-1", addressDetailVm.contactName());
     }
 
+
     @Test
     void getAddress_NotExistInDatabase_ThrowsNotFoundException() {
         NotFoundException exception = assertThrows(NotFoundException.class, () -> addressService.getAddress(100000L));
         assertEquals(String.format("The address %s is not found", "100000"), exception.getMessage());
     }
+
 
     @Test
     void getAllAddresses_Success() {
@@ -99,6 +105,7 @@ public class AddressServiceTest {
         List<AddressDetailVm> addressDetailVmList = addressService.getAddressList(List.of(address1.getId(), address2.getId()));
         assertEquals(2, addressDetailVmList.size());
     }
+
 
     @Test
     void updateAddress_validData_Success() {
@@ -115,6 +122,7 @@ public class AddressServiceTest {
         assertEquals("update-address", addressDetailVm.contactName());
     }
 
+
     @Test
     void updateAddress_inValidAddressId_ThrowsAddressNotFoundException() {
         generateTestData();
@@ -127,6 +135,7 @@ public class AddressServiceTest {
         NotFoundException exception = assertThrows(NotFoundException.class, () -> addressService.updateAddress(10000L, addressPostVm));
         assertEquals(String.format("The address %s is not found", "10000"), exception.getMessage());
     }
+
 
     @Test
     void createAddress_validDate_Success() {
@@ -141,6 +150,7 @@ public class AddressServiceTest {
         assertNotNull(addressGetVm);
     }
 
+
     @Test
     void createAddress_inValidData_ThrowsCountryNotFoundException() {
         generateTestData();
@@ -154,6 +164,7 @@ public class AddressServiceTest {
         assertEquals(String.format("The country %s is not found", "10000"), exception.getMessage());
     }
 
+    
     @Test
     void deleteAddress_givenAddressIdValid_thenSuccess() {
         generateTestData();

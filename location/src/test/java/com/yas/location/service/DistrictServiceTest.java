@@ -53,6 +53,7 @@ public class DistrictServiceTest {
         countryRepository.deleteAll();
     }
 
+
     @Test
     void getDistrict_WithValidId_Success() {
         generateTestData();
@@ -62,6 +63,7 @@ public class DistrictServiceTest {
         assertEquals("district-1", districtGetVm.get(0).name());
     }
 
+    
     @Test
     void getDistrict_WithInvalidId_ReturnsEmptyList() {
         generateTestData();

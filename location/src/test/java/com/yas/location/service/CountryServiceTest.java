@@ -53,11 +53,13 @@ public class CountryServiceTest {
         assertEquals("country-1", countryVm.name());
     }
 
+
     @Test
     void getCountry_NotInDatabase_ThrowsCountryNotFoundException() {
         NotFoundException exception = assertThrows(NotFoundException.class, () -> countryService.findById(1L));
         assertEquals(String.format("The country %s is not found", "1"), exception.getMessage());
     }
+
 
     @Test
     void getAllCountries_Success() {
@@ -65,6 +67,7 @@ public class CountryServiceTest {
         List<CountryVm> countryVms = countryService.findAllCountries();
         assertEquals(2, countryVms.size());
     }
+
 
     @Test
     void createCountry_ValidData_Success() {
@@ -76,6 +79,7 @@ public class CountryServiceTest {
         assertNotNull(country);
         assertEquals("country", country.getName());
     }
+
 
     @Test
     void createCountry_WithNameExisted_ThrowsNameAlreadyExistedException() {
@@ -89,6 +93,7 @@ public class CountryServiceTest {
         assertEquals(String.format("Request name %s is already existed", "country-1"), exception.getMessage());
     }
 
+
     @Test
     void createCountry_WithCodeExisted_ThrowsCodeAlreadyExistedException() {
         generateTestData();
@@ -100,6 +105,7 @@ public class CountryServiceTest {
             assertThrows(DuplicatedException.class, () -> countryService.create(countryPostVm));
         assertEquals(String.format("The code %s is already existed", "TS"), exception.getMessage());
     }
+
 
     @Test
     void updateCountry_ValidData_Success() {
@@ -114,6 +120,7 @@ public class CountryServiceTest {
         assertEquals("country-1-update", countryVm.name());
     }
 
+
     @Test
     void updateCountry_WithIdNotValid_ThrowsCountryNotFoundException() {
         CountryPostVm countryPostVm = CountryPostVm.builder()
@@ -123,6 +130,7 @@ public class CountryServiceTest {
             assertThrows(NotFoundException.class, () -> countryService.update(countryPostVm, 1L));
         assertEquals(String.format("The country %s is not found", "1"), exception.getMessage());
     }
+
 
     @Test
     void updateCountry_WithNameExisted_ThrowsNameAlreadyExistedException() {
@@ -137,6 +145,7 @@ public class CountryServiceTest {
         assertEquals(String.format("Request name %s is already existed", "country-2"), exception.getMessage());
     }
 
+
     @Test
     void updateCountry_WithCodeExisted_ThrowsCodeAlreadyExistedException() {
         generateTestData();
@@ -150,6 +159,7 @@ public class CountryServiceTest {
         assertEquals(String.format("The code %s is already existed", "tW"), exception.getMessage());
     }
 
+
     @Test
     void deleteCountry_WithValidId_Success() {
         generateTestData();
@@ -159,12 +169,14 @@ public class CountryServiceTest {
         assertThrows(NotFoundException.class, () -> countryService.findById(country1Id));
     }
 
+
     @Test
     void deleteCountry_WithInValidId_ThrowsCountryNotFoundException() {
         NotFoundException exception = assertThrows(NotFoundException.class, () -> countryService.delete(1L));
         assertEquals(String.format("The country %s is not found", "1"), exception.getMessage());
     }
 
+    
     @Test
     void getCountries_Pagination_Success() {
         generateTestData();
