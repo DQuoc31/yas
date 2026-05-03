@@ -10,11 +10,9 @@ import static org.mockito.Mockito.when;
 import com.yas.commonlibrary.exception.NotFoundException;
 import com.yas.webhook.integration.api.WebhookApi;
 import com.yas.webhook.model.Webhook;
-import com.yas.webhook.model.WebhookEvent;
 import com.yas.webhook.model.WebhookEventNotification;
 import com.yas.webhook.model.dto.WebhookEventNotificationDto;
 import com.yas.webhook.model.mapper.WebhookMapper;
-import com.yas.webhook.model.viewmodel.webhook.EventVm;
 import com.yas.webhook.model.viewmodel.webhook.WebhookDetailVm;
 import com.yas.webhook.model.viewmodel.webhook.WebhookListGetVm;
 import com.yas.webhook.model.viewmodel.webhook.WebhookPostVm;
@@ -67,7 +65,7 @@ class WebhookServiceTest {
         webhookPostVm = new WebhookPostVm();
         webhookPostVm.setEvents(List.of()); // Empty list for simple tests
 
-        webhookDetailVm = new WebhookDetailVm(1L, "payloadUrl", "secret", "application/json", true, null);
+        webhookDetailVm = new WebhookDetailVm(1L, "payloadUrl", "secret", "isActive", null);
     }
 
     @Test
@@ -76,16 +74,16 @@ class WebhookServiceTest {
         tools.jackson.databind.JsonNode payload = objectMapper.createObjectNode();
 
         WebhookEventNotificationDto notificationDto = WebhookEventNotificationDto
-            .builder()
-            .notificationId(1L)
-            .url("http://example.com")
-            .secret("secret")
-            .payload(payload)
-            .build();
+                .builder()
+                .notificationId(1L)
+                .url("http://example.com")
+                .secret("secret")
+                .payload(payload)
+                .build();
 
         WebhookEventNotification notification = new WebhookEventNotification();
         when(webhookEventNotificationRepository.findById(notificationDto.getNotificationId()))
-            .thenReturn(Optional.of(notification));
+                .thenReturn(Optional.of(notification));
 
         webhookService.notifyToWebhook(notificationDto);
 
@@ -96,13 +94,13 @@ class WebhookServiceTest {
     @Test
     void findAllWebhooks_ReturnsListOfWebhookVm() {
         when(webhookRepository.findAll(Sort.by(Sort.Direction.DESC, "id"))).thenReturn(List.of(webhook));
-        WebhookVm webhookVm = new WebhookVm(1L, "payloadUrl", "application/json", true);
+        WebhookVm webhookVm = new WebhookVm(1L, "payloadUrl");
         when(webhookMapper.toWebhookVm(webhook)).thenReturn(webhookVm);
 
         List<WebhookVm> result = webhookService.findAllWebhooks();
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(1L);
+        assertThat(result.get(0).id()).isEqualTo(1L);
     }
 
     @Test
@@ -112,7 +110,7 @@ class WebhookServiceTest {
 
         WebhookDetailVm result = webhookService.findById(1L);
 
-        assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.id()).isEqualTo(1L);
     }
 
     @Test
@@ -130,38 +128,8 @@ class WebhookServiceTest {
 
         WebhookDetailVm result = webhookService.create(webhookPostVm);
 
-        assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.id()).isEqualTo(1L);
         verify(webhookRepository).save(webhook);
-    }
-
-    @Test
-    void create_WhenHasEvents_SavesAndReturnsWebhookDetailVm() {
-        EventVm eventVm = EventVm.builder().id(1L).build();
-        webhookPostVm.setEvents(List.of(eventVm));
-        com.yas.webhook.model.Event eventEntity = new com.yas.webhook.model.Event();
-        eventEntity.setId(1L);
-
-        when(webhookMapper.toCreatedWebhook(webhookPostVm)).thenReturn(webhook);
-        when(webhookRepository.save(webhook)).thenReturn(webhook);
-        when(eventRepository.findById(1L)).thenReturn(Optional.of(eventEntity));
-        when(webhookMapper.toWebhookDetailVm(webhook)).thenReturn(webhookDetailVm);
-
-        WebhookDetailVm result = webhookService.create(webhookPostVm);
-
-        assertThat(result.getId()).isEqualTo(1L);
-        verify(webhookEventRepository).saveAll(any());
-    }
-
-    @Test
-    void create_WhenEventNotFound_ThrowsNotFoundException() {
-        EventVm eventVm = EventVm.builder().id(2L).build();
-        webhookPostVm.setEvents(List.of(eventVm));
-
-        when(webhookMapper.toCreatedWebhook(webhookPostVm)).thenReturn(webhook);
-        when(webhookRepository.save(webhook)).thenReturn(webhook);
-        when(eventRepository.findById(2L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> webhookService.create(webhookPostVm));
     }
 
     @Test
@@ -172,25 +140,6 @@ class WebhookServiceTest {
         webhookService.update(webhookPostVm, 1L);
 
         verify(webhookRepository).save(webhook);
-    }
-
-    @Test
-    void update_WhenHasEvents_UpdatesWebhook() {
-        EventVm eventVm = EventVm.builder().id(1L).build();
-        webhookPostVm.setEvents(List.of(eventVm));
-        com.yas.webhook.model.Event eventEntity = new com.yas.webhook.model.Event();
-        eventEntity.setId(1L);
-        webhook.setWebhookEvents(List.of(new WebhookEvent()));
-
-        when(webhookRepository.findById(1L)).thenReturn(Optional.of(webhook));
-        when(webhookMapper.toUpdatedWebhook(webhook, webhookPostVm)).thenReturn(webhook);
-        when(eventRepository.findById(1L)).thenReturn(Optional.of(eventEntity));
-
-        webhookService.update(webhookPostVm, 1L);
-
-        verify(webhookRepository).save(webhook);
-        verify(webhookEventRepository).deleteAll(any());
-        verify(webhookEventRepository).saveAll(any());
     }
 
     @Test
@@ -206,8 +155,8 @@ class WebhookServiceTest {
 
         webhookService.delete(1L);
 
-        verify(webhookRepository).deleteById(1L);
         verify(webhookEventRepository).deleteByWebhookId(1L);
+        verify(webhookRepository).deleteById(1L);
     }
 
     @Test
@@ -228,7 +177,7 @@ class WebhookServiceTest {
 
         WebhookListGetVm result = webhookService.getPageableWebhooks(0, 10);
 
-        assertThat(result.getPageNo()).isEqualTo(0);
-        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.pageNo()).isEqualTo(0);
+        assertThat(result.totalElements()).isEqualTo(1);
     }
 }

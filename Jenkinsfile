@@ -355,7 +355,7 @@ pipeline {
 
 
         // ==========================================
-        // CỤM 4: CUSTOMER SERVICE
+        // CỤM 5: CUSTOMER SERVICE
         // ==========================================
         stage('Customer Service') {
             // Yêu cầu 6: Chỉ chạy khi code trong thư mục customer bị thay đổi
@@ -445,7 +445,7 @@ pipeline {
 
 
         // ==========================================
-        // CỤM 5: DELIVERY SERVICE
+        // CỤM 6: DELIVERY SERVICE
         // ==========================================
         stage('Delivery Service') {
             // Yêu cầu 6: Chỉ chạy khi code trong thư mục delivery bị thay đổi
@@ -535,7 +535,7 @@ pipeline {
 
 
         // ==========================================
-        // CỤM 6: INVENTORY SERVICE
+        // CỤM 7: INVENTORY SERVICE
         // ==========================================
         stage('Inventory Service') {
             // Yêu cầu 6: Chỉ chạy khi code trong thư mục inventory bị thay đổi
@@ -621,8 +621,11 @@ pipeline {
                 }
             }
         }
+
+
+
         // ==========================================
-        // CỤM 7: RATING SERVICE
+        // CỤM 8: RATING SERVICE
         // ==========================================
         stage('Rating Service') {
             // Yêu cầu 6: Chỉ chạy khi code trong thư mục rating bị thay đổi
@@ -692,8 +695,11 @@ pipeline {
                 }
             }
         }
+
+
+
         // ==========================================
-        // CỤM 8: WEBHOOK SERVICE
+        // CỤM 9: WEBHOOK SERVICE
         // ==========================================
         stage('Webhook Service') {
             // Yêu cầu 6: Chỉ chạy khi code trong thư mục webhook bị thay đổi
@@ -767,7 +773,7 @@ pipeline {
 
 
         // ==========================================
-        // CỤM 9: LOCATION SERVICE
+        // CỤM 10: LOCATION SERVICE
         // ==========================================
         stage('Location Service') {
             when { 
@@ -840,7 +846,7 @@ pipeline {
 
 
         // ==========================================
-        // CỤM 10: ORDER SERVICE
+        // CỤM 11: ORDER SERVICE
         // ==========================================
         stage('Order Service') {
             when { 
@@ -910,8 +916,10 @@ pipeline {
             }
         }
 
+
+
         // ==========================================
-        // CỤM 11: SEARCH SERVICE
+        // CỤM 12: SEARCH SERVICE
         // ==========================================
         stage('Search Service') {
             when { 
@@ -980,8 +988,11 @@ pipeline {
                 }
             }
         }
+
+
+        
         // ==========================================
-        // CỤM 9: RECOMMENDATION SERVICE
+        // CỤM 13: RECOMMENDATION SERVICE
         // ==========================================
         stage('Recommendation Service') {
             // Yêu cầu 6: Chỉ chạy khi code trong thư mục recommendation bị thay đổi
