@@ -705,5 +705,78 @@ pipeline {
                 }
             }
         }
+
+
+
+        // ==========================================
+        // CỤM 10: ORDER SERVICE
+        // ==========================================
+        stage('Order Service') {
+            when { 
+                changeset "order/**" 
+            }
+            stages {
+                stage('Security: Gitleaks Scan') {
+                    steps {
+                        echo 'Đang tải và chạy Gitleaks cho Order...'
+                        sh '''
+                        curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz
+                        chmod +x gitleaks
+                        ./gitleaks detect --source . -v || true
+                        '''
+                    }
+                }
+
+                stage('Build Order') {
+                    steps {
+                        echo "Phát hiện thay đổi. Đang build Order Service..."
+                        sh 'mvn --projects order --also-make clean install -DskipTests'
+                    }
+                }
+                
+                stage('Test Order') {
+                    steps {
+                        echo "Đang chạy Test cho Order Service..."
+                        sh 'mvn --projects order --also-make test'
+                    }
+                    post {
+                        always {
+                            echo "Đang lưu kết quả Test cho Order..."
+                            junit 'order/target/surefire-reports/*.xml'
+                            archiveArtifacts artifacts: 'order/target/site/jacoco/**', allowEmptyArchive: true
+                        }
+                    }
+                }
+
+                stage('Quality: SonarQube Scan Order') {
+                    steps {
+                        echo 'Đang gửi báo cáo của Order lên SonarQube...'
+                        sh '''
+                        mvn sonar:sonar \
+                        -pl order -am \
+                        -Dsonar.projectKey=yas-order \
+                        -Dsonar.projectName="YAS Order Service" \
+                        -Dsonar.host.url=http://192.168.31.16:9000 \
+                        -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        '''
+                    }
+                }
+
+                stage('Security: Snyk Dependency Scan') {
+                    environment {
+                        SNYK_TOKEN = credentials('snyk-token')
+                    }
+                    steps {
+                        echo 'Đang kiểm tra lỗ hổng thư viện cho Order...'
+                        sh '''
+                        curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk
+                        chmod +x ./snyk
+                        ./snyk test --all-projects --token=$SNYK_TOKEN || true
+                        '''
+                    }
+                }
+            }
+        }
     }
 }
