@@ -350,5 +350,75 @@ pipeline {
                 }
             }
         }
+        // ==========================================
+        // CỤM 5: SEARCH SERVICE
+        // ==========================================
+        stage('Search Service') {
+            when { 
+                changeset "search/**" 
+            }
+            stages {
+                stage('Security: Gitleaks Scan') {
+                    steps {
+                        echo 'Đang tải và chạy Gitleaks để quét Secret...'
+                        sh '''
+                        curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz
+                        chmod +x gitleaks
+                        ./gitleaks detect --source . -v || true
+                        '''
+                    }
+                }
+
+                stage('Build Search') {
+                    steps {
+                        echo "Phát hiện thay đổi. Đang build Search Service..."
+                        sh 'mvn --projects search --also-make clean install -DskipTests'
+                    }
+                }
+                
+                stage('Test Search') {
+                    steps {
+                        echo "Đang chạy Test cho Search Service..."
+                        sh 'mvn --projects search --also-make test'
+                    }
+                    post {
+                        always {
+                            echo "Đang lưu kết quả Test và Coverage của Search..."
+                            junit 'search/target/surefire-reports/*.xml'
+                            archiveArtifacts artifacts: 'search/target/site/jacoco/**', allowEmptyArchive: true
+                        }
+                    }
+                }
+
+                stage('Quality: SonarQube Scan Search') {
+                    steps {
+                        echo 'Đang gửi code và báo cáo Test của Search lên SonarQube...'
+                        sh '''
+                        mvn sonar:sonar \
+                        -pl search -am \
+                        -Dsonar.projectKey=yas-search \
+                        -Dsonar.projectName="YAS Search Service" \
+                        -Dsonar.host.url=http://192.168.31.16:9000 \
+                        -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        '''
+                    }
+                }
+
+                stage('Security: Snyk Dependency Scan') {
+                    environment {
+                        SNYK_TOKEN = credentials('snyk-token')
+                    }
+                    steps {
+                        echo 'Đang kiểm tra lỗ hổng thư viện với Snyk...'
+                        sh '''
+                        curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk
+                        chmod +x ./snyk
+                        ./snyk test --all-projects --token=$SNYK_TOKEN || true
+                        '''
+                    }
+                }
+            }
+        }
     }    
 }
