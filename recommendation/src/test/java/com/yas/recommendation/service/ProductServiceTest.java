@@ -46,8 +46,11 @@ class ProductServiceTest {
     void getProductDetail_WhenCalled_ReturnsProductDetailVm() {
         long productId = 1L;
         ProductDetailVm mockProductDetailVm = new ProductDetailVm(
-            1L, "Test Product", "Test SEO", "Test Desc"
-        ); // Assuming constructor or fields, doesn't matter much as it's a mock return
+            1L, "Test Product", "Short", "Desc", "Spec", "SKU", "GTIN", "Slug",
+            true, true, false, true, true, 100.0, 1L, java.util.List.of(),
+            "Title", "Keyword", "MetaDesc", 1L, "Brand", java.util.List.of(),
+            java.util.List.of(), null, java.util.List.of()
+        );
 
         when(restClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri(any(URI.class))).thenReturn(requestHeadersSpec);
