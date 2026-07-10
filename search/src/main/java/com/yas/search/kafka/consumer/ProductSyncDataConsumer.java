@@ -31,23 +31,17 @@ public class ProductSyncDataConsumer extends BaseCdcConsumer<ProductMsgKey, Prod
         this.productSyncDataService = productSyncDataService;
     }
 
-    @KafkaListener(
-        id = "product-sync-es",
-        groupId = "product-sync-search",
-        topics = "${product.topic.name}",
-        containerFactory = PRODUCT_CDC_LISTENER_CONTAINER_FACTORY
-    )
+    @KafkaListener(id = "product-sync-es", groupId = "product-sync-search", topics = "${product.topic.name}", containerFactory = PRODUCT_CDC_LISTENER_CONTAINER_FACTORY)
     @RetrySupportDql(listenerContainerFactory = PRODUCT_CDC_LISTENER_CONTAINER_FACTORY)
     public void processMessage(
-        @Header(KafkaHeaders.RECEIVED_KEY) ProductMsgKey key,
-        @Payload(required = false) @Valid ProductCdcMessage productCdcMessage,
-        @Headers MessageHeaders headers
-    ) {
+            @Header(KafkaHeaders.RECEIVED_KEY) ProductMsgKey key,
+            @Payload(required = false) @Valid ProductCdcMessage productCdcMessage,
+            @Headers MessageHeaders headers) {
         processMessage(key, productCdcMessage, headers, this::sync);
     }
 
     // hihi test nè
-    // test típ típ típ típ 22222
+    // test típ típ típ típ 22222333
     public void sync(ProductMsgKey key, ProductCdcMessage productCdcMessage) {
         boolean isHardDeleteEvent = productCdcMessage == null || DELETE.equals(productCdcMessage.getOp());
         if (isHardDeleteEvent) {
