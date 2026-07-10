@@ -47,7 +47,7 @@ public class ProductSyncDataConsumer extends BaseCdcConsumer<ProductMsgKey, Prod
     }
 
     // hihi test nè
-    //hihi test tiếp
+    // test típ típ típ típ
     public void sync(ProductMsgKey key, ProductCdcMessage productCdcMessage) {
         boolean isHardDeleteEvent = productCdcMessage == null || DELETE.equals(productCdcMessage.getOp());
         if (isHardDeleteEvent) {
