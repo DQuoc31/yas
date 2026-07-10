@@ -988,9 +988,6 @@ pipeline {
                 }
             }
         }
-
-
-        
         // ==========================================
         // CỤM 13: RECOMMENDATION SERVICE
         // ==========================================
@@ -1053,6 +1050,77 @@ pipeline {
                     }
                     steps {
                         echo 'Đang kiểm tra lỗ hổng thư viện với Snyk...'
+                        sh '''
+                        curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk
+                        chmod +x ./snyk
+                        ./snyk test --all-projects --token=$SNYK_TOKEN || true
+                        '''
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // CỤM 14: PAYMENT SERVICE
+        // ==========================================
+        stage('Payment Service') {
+            when { 
+                changeset "payment/**" 
+            }
+            stages {
+                stage('Security: Gitleaks Scan') {
+                    steps {
+                        echo 'Đang tải và chạy Gitleaks cho Payment...'
+                        sh '''
+                        curl -sL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz
+                        chmod +x gitleaks
+                        ./gitleaks detect --source . -v || true
+                        '''
+                    }
+                }
+
+                stage('Build Payment') {
+                    steps {
+                        echo "Phát hiện thay đổi. Đang build Payment Service..."
+                        sh 'mvn --projects payment --also-make clean install -DskipTests'
+                    }
+                }
+                
+                stage('Test Payment') {
+                    steps {
+                        echo "Đang chạy Test cho Payment Service..."
+                        sh 'mvn --projects payment --also-make test'
+                    }
+                    post {
+                        always {
+                            echo "Đang lưu kết quả Test cho Payment..."
+                            junit 'payment/target/surefire-reports/*.xml'
+                            archiveArtifacts artifacts: 'payment/target/site/jacoco/**', allowEmptyArchive: true
+                        }
+                    }
+                }
+
+                stage('Quality: SonarQube Scan Payment') {
+                    steps {
+                        echo 'Đang gửi báo cáo của Payment lên SonarQube...'
+                        sh '''
+                        mvn sonar:sonar \
+                        -pl payment -am \
+                        -Dsonar.projectKey=yas-payment \
+                        -Dsonar.projectName="YAS Payment Service" \
+                        -Dsonar.host.url=http://192.168.31.16:9000 \
+                        -Dsonar.login=squ_e4b2aecfd410669cc972426e5a7b160c1760e2e5 \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                        '''
+                    }
+                }
+
+                stage('Security: Snyk Dependency Scan') {
+                    environment {
+                        SNYK_TOKEN = credentials('snyk-token')
+                    }
+                    steps {
+                        echo 'Đang kiểm tra lỗ hổng thư viện cho Payment...'
                         sh '''
                         curl --compressed https://static.snyk.io/cli/latest/snyk-linux -o snyk
                         chmod +x ./snyk

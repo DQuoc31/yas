@@ -8,6 +8,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.yas.commonlibrary.exception.DuplicatedException;
 import com.yas.commonlibrary.exception.NotFoundException;
 import com.yas.payment.mapper.CreatePaymentProviderMapper;
 import com.yas.payment.mapper.PaymentProviderMapper;
@@ -15,9 +16,11 @@ import com.yas.payment.mapper.UpdatePaymentProviderMapper;
 import com.yas.payment.model.PaymentProvider;
 import com.yas.payment.repository.PaymentProviderRepository;
 import com.yas.payment.viewmodel.paymentprovider.CreatePaymentVm;
+import com.yas.payment.viewmodel.paymentprovider.MediaVm;
 import com.yas.payment.viewmodel.paymentprovider.PaymentProviderVm;
 import com.yas.payment.viewmodel.paymentprovider.UpdatePaymentVm;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
@@ -30,6 +33,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 
 class PaymentProviderServiceTest {
 
@@ -63,6 +68,7 @@ class PaymentProviderServiceTest {
 
     private Pageable defaultPageable = Pageable.ofSize(10);
 
+    
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -71,6 +77,8 @@ class PaymentProviderServiceTest {
         paymentProvider.setAdditionalSettings("additional settings");
         paymentProvider.setEnabled(true);
     }
+
+
 
     @Test
     @DisplayName("Create Payment Provider successfully")
@@ -91,6 +99,8 @@ class PaymentProviderServiceTest {
             .ignoringFields(IGNORED_FIELDS)
             .isEqualTo(createPaymentRequest);
     }
+
+
 
     @Test
     @DisplayName("Update Payment Provider successfully")
@@ -113,6 +123,8 @@ class PaymentProviderServiceTest {
             .isEqualTo(updatePaymentRequest);
     }
 
+
+
     @Test
     @DisplayName("Update non-existing Payment Provider, Service should throw NotFoundException")
     void updateNonExistPaymentProvider() {
@@ -129,6 +141,8 @@ class PaymentProviderServiceTest {
         );
     }
 
+
+
     @Test
     void getAdditionalSettingsByPaymentProviderId_ShouldReturnAdditionalSettings_WhenPaymentProviderExists() {
         when(paymentProviderRepository.findById("providerId")).thenReturn(Optional.of(paymentProvider));
@@ -138,6 +152,8 @@ class PaymentProviderServiceTest {
         assertThat(result).isEqualTo("additional settings");
         verify(paymentProviderRepository, times(1)).findById("providerId");
     }
+
+
 
     @Test
     void getAdditionalSettingsByPaymentProviderId_ShouldThrowNotFoundException_WhenPaymentProviderDoesNotExist() {
@@ -150,6 +166,8 @@ class PaymentProviderServiceTest {
         verify(paymentProviderRepository, times(1)).findById("invalidId");
     }
 
+
+
     @Test
     void getEnabledPaymentProviders_ShouldReturnListOfEnabledPaymentProviders() {
         List<PaymentProvider> enabledProviders = List.of(paymentProvider);
@@ -158,9 +176,11 @@ class PaymentProviderServiceTest {
         List<PaymentProviderVm> result = paymentProviderService.getEnabledPaymentProviders(defaultPageable);
 
         assertThat(result).hasSize(1);
-        assertThat(result.getFirst().getId()).isEqualTo(paymentProvider.getId());
+        assertThat(result.get(0).getId()).isEqualTo(paymentProvider.getId());
         verify(paymentProviderRepository, times(1)).findByEnabledTrue(defaultPageable);
     }
+
+
 
     @Test
     void getEnabledPaymentProviders_ShouldReturnEmptyList_WhenNoEnabledPaymentProvidersExist() {
@@ -171,6 +191,95 @@ class PaymentProviderServiceTest {
         assertThat(result).isEmpty();
         verify(paymentProviderRepository, times(1)).findByEnabledTrue(defaultPageable);
     }
+
+    @Test
+    void getEnabledPaymentProviders_ShouldReturnEmpty_WhenNoProviders() {
+        when(paymentProviderRepository.findByEnabledTrue(any(Pageable.class))).thenReturn(List.of());
+        var result = paymentProviderService.getEnabledPaymentProviders(Pageable.unpaged());
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void getEnabledPaymentProviders_ShouldReturnList_WhenProvidersExist() {
+        PaymentProvider provider = new PaymentProvider();
+        provider.setId("test");
+        provider.setMediaId(1L);
+        List<PaymentProvider> providers = List.of(provider);
+        
+        when(paymentProviderRepository.findByEnabledTrue(any(Pageable.class))).thenReturn(providers);
+        when(mediaService.getMediaVmMap(any())).thenReturn(Map.of(1L, MediaVm.builder().url("http://icon").build()));
+        when(paymentProviderMapper.toVm(any())).thenReturn(new PaymentProviderVm("test", "Test", "url", 1, 1L, null));
+
+        var result = paymentProviderService.getEnabledPaymentProviders(Pageable.unpaged());
+        
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getIconUrl()).isEqualTo("http://icon");
+    }
+    
+    @Test
+    @DisplayName("Create Payment Provider failures")
+    void createPaymentProvider_Failures() {
+        // Test save failure
+        when(paymentProviderRepository.save(any())).thenThrow(new RuntimeException("Save failed"));
+        CreatePaymentVm createVm = getCreatePaymentVm("test");
+        assertThrows(RuntimeException.class, () -> paymentProviderService.create(createVm));
+    }
+
+    @Test
+    @DisplayName("Update Payment Provider failures")
+    void updatePaymentProvider_Failures() {
+        // Test not found
+        when(paymentProviderRepository.findById("non-existent")).thenReturn(Optional.empty());
+        UpdatePaymentVm updateVm = getUpdatePaymentVm("non-existent");
+        assertThrows(NotFoundException.class, () -> paymentProviderService.update(updateVm));
+    }
+    
+
+    @Test
+    @DisplayName("Get additional settings failures")
+    void getAdditionalSettings_Failures() {
+        // Test not found
+        when(paymentProviderRepository.findById("non-existent")).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> 
+            paymentProviderService.getAdditionalSettingsByPaymentProviderId("non-existent"));
+    }
+
+    @Test
+    void create_ShouldThrowDuplicatedException_WhenIdExists() {
+        CreatePaymentVm createPaymentRequest = CreatePaymentVm.builder().id("existingId").build();
+        when(paymentProviderRepository.existsById("existingId")).thenReturn(true);
+
+        assertThrows(DuplicatedException.class, () -> paymentProviderService.create(createPaymentRequest));
+    }
+
+
+    @Test
+    void getEnabledPaymentProviders_ShouldReturnEmptyList_WhenNoProvidersFound() {
+        when(paymentProviderRepository.findByEnabledTrue(any(Pageable.class))).thenReturn(java.util.Collections.emptyList());
+
+        List<PaymentProviderVm> result = paymentProviderService.getEnabledPaymentProviders(defaultPageable);
+
+        assertThat(result).isEmpty();
+    }
+
+
+    @Test
+    void findById_ShouldReturnVm_WhenProviderExists() {
+        var randomVal = UUID.randomUUID().toString();
+        PaymentProvider provider = getPaymentProvider(randomVal);
+        when(paymentProviderRepository.findById(randomVal)).thenReturn(Optional.of(provider));
+
+        var result = paymentProviderService.findById(randomVal);
+
+        assertThat(result.getId()).isEqualTo(randomVal);
+    }
+
+    @Test
+    void findById_ShouldThrowNotFoundException_WhenNotExists() {
+        when(paymentProviderRepository.findById("none")).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> paymentProviderService.findById("none"));
+    }
+
 
     private static @NotNull PaymentProvider getPaymentProvider(String randomVal) {
         PaymentProvider provider = new PaymentProvider();

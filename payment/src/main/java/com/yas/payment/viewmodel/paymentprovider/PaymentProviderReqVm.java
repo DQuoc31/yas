@@ -5,6 +5,9 @@ import jakarta.validation.constraints.NotNull;
 
 @lombok.Getter
 @lombok.Setter
+@lombok.NoArgsConstructor
+@lombok.AllArgsConstructor
+@lombok.experimental.SuperBuilder
 public class PaymentProviderReqVm {
 
     @NotNull
